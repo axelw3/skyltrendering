@@ -1,0 +1,30 @@
+body, html{
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#left, #right{
+    width: 50%;
+    height: 100%;
+    float: left;
+}
+
+#input{
+    outline: none;
+    height: calc(100% - 4px);
+    width: calc(100% - 4px);
+    padding: 2px;
+    margin: 0;
+}
+
+#render{
+    height: 100%;
+    width: 100%;
+}
+
+#input, #render{
+    border: 0;
+    resize: none;
+}

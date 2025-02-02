@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Skyltprogram</title>
+        <meta charset="UTF-8">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <div id="left"><textarea spellcheck="false" id="input">{
+   "type": "junction",
+   "aspectRatio": [2, 1],
+   "properties": {
+      "background": "#06a",
+      "color": "white",
+      "borderWidth": 4,
+      "font": "\"Tratex\""
+   },
+   "nodes": {
+      "fwd": {
+         "anchor": { "x": "left", "y": "bottom" },
+         "data": {
+            "type": "skylt",
+            "elements": [
+               {
+                  "type": "vagnr",
+                  "properties": { "color": "white", "background": "#097", "value": "123", "dashedInset": true }
+               },
+               {
+                  "type": "text",
+                  "properties": { "value": "DALSKOGSBORG", "font": "\"TratexVersal\"" }
+               }
+            ]
+         }
+      },
+      "right": {
+         "anchor": { "x": "left", "y": "middle" },
+         "data": {
+            "type": "skylt",
+            "elements": [
+               {
+                  "type": "text",
+                  "properties": { "value": "HAVSÅKER", "font": "\"TratexVersal\"" }
+               }
+            ]
+         }
+      }
+   }
+}</textarea>
+        </div>
+        <div id="right"><iframe id="render" src="about:blank"></iframe></div>
+        <script>
+(function(){
+    let data_input = document.getElementById("input"), fr = document.getElementById("render");
+
+    data_input.addEventListener("change", () => {
+        fr.setAttribute("src", "/render.html?data=" + window.encodeURIComponent(JSON.stringify(JSON.parse(data_input.value))));
+    });
+
+    data_input.dispatchEvent(new Event("change"));
+})();
+        </script>
+    </body>
+</html>
