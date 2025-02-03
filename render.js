@@ -210,12 +210,12 @@ const SKYLTTYPER = {
     // load the "Bitter" font from Google Fonts
     const tratex = new FontFace(
         "Tratex",
-        "url(/TratexSvart-Regular.otf)",
+        "url(TratexSvart-Regular.otf)",
     );
 
     const tratexVersal = new FontFace(
         "TratexVersal",
-        "url(/TRATEXPOSVERSAL-POSVERSAL.otf)",
+        "url(TRATEXPOSVERSAL-POSVERSAL.otf)",
     );
 
     document.fonts.add(tratex);
