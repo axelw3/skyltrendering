@@ -4,7 +4,7 @@
 // 3. Default value (from DEFAULT_PROPERTIES)
 // 4. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = ["color", "background", "font", "borderRadius"]; // properties that can be inherited
+const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight"]; // properties that can be inherited
 
 const GLOBAL_DEFAULTS = {
     "borderWidth": 0,
@@ -17,7 +17,8 @@ const DEFAULTS = { // defaults (applied only to root tag)
     "borderWidth": 4,
     "borderRadius": 4,
     "font": "sans-serif",
-    "padding": 8
+    "padding": 8,
+    "lineHeight": 36
 };
 
 const DEFAULT_PROPERTIES = {
@@ -31,7 +32,7 @@ const DEFAULT_PROPERTIES = {
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [16, 10]
+        "padding": [16, 6]
     },
     "text": {
         "value": "Text",
@@ -43,6 +44,14 @@ const DEFAULT_PROPERTIES = {
 const SKYLT_ELEMENT_SPACING_X = 8;
 
 const SKYLTTYPER = {
+    "plain": {
+        "width": 0,
+        "height": 0,
+        "core": [0, 0, 0, 0],
+        "nodes": {
+            "default": { "x": [0, 0], "y": [0, 0] }
+        }
+    },
     "junction": {
         "width": 120,
         "height": 240,
@@ -61,7 +70,7 @@ const SKYLTTYPER = {
         "height": 480,
         "core": [.35, .75, .09, .35],
         "nodes": {
-            "fwd": { "x": [.5, .5], "y": [0, 0] },
+            "fwd": { "x": [.5, .5], "y": [.03, .03] },
             "right": { "x": [.9, .9], "y": [.21, .21] },
             "left": { "x": [.1, .1], "y": [.21, .21] }
         }
@@ -134,10 +143,10 @@ class SignElement{
 
                 switch(this.properties.alignContents){
                     case "center":
-                        c2.x += Math.floor((canv.width - w[c2.row]) / 2);
+                        c2.x += Math.floor((canv.width - 2 * padding[0] - w[c2.row]) / 2);
                         break;
                     case "right":
-                        c2.x += canv.width - w[c2.row] - padding[0];
+                        c2.x += canv.width - w[c2.row] - 2 * padding[0];
                         break;
                 }
 
@@ -165,12 +174,13 @@ class SignElement{
             firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
         }else if(this.type == "vagnr" || this.type == "text"){
                 ctx.font = "32px " + this.properties.font;
-                ctx.textBaseline = "middle";
+                //ctx.textBaseline = "middle";
 
                 let box = ctx.measureText(this.properties.value);
 
                 canv.width = box.width + 2 * padding[0];
-                canv.height = 2 * Math.ceil(Math.max(Math.abs(box.actualBoundingBoxAscent), Math.abs(box.actualBoundingBoxDescent))) + 2 * padding[1];
+                //canv.height = 2 * Math.ceil(Math.max(Math.abs(box.actualBoundingBoxAscent), Math.abs(box.actualBoundingBoxDescent))) + 2 * padding[1];
+                canv.height = this.properties.lineHeight + 2 * padding[1];
 
                 roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -334,6 +344,8 @@ class SignElement{
                 prop.padding + prop.borderWidth + res.y - boundingBox[2]
             );
         });
+
+        if(t.width == 0 || t.height == 0) return;
 
         svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
         svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));

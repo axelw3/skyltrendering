@@ -1,22 +1,30 @@
 [
     {
-        "name": "F1-1: Enkelt exempel",
+        "name": "F1-1. Orienteringstavla, enkelt exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"fwd":{"anchor":{"x":"center-first","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"26"}},{"type":"vagnr","properties":{"value":"40"}},{"type":"text","properties":{"value":"JÖNKÖPING","font":"\"TratexVersal\""}}]}},"right":{"anchor":{"x":"left","y":"middle-first"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"26"}},{"type":"text","properties":{"value":"HALMSTAD","font":"\"TratexVersal\""}},{"type":"newline"},{"type":"text","properties":{"value":"GISLAVED","font":"\"TratexVersal\""}}]}}}}
     },
     {
-        "name": "F1-1: Mer komplicerat exempel",
+        "name": "F1-1. Orienteringstavla, mer invecklat exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"vagnr","properties":{"value":"26"}},{"type":"vagnr","properties":{"value":"40"}},{"type":"text","properties":{"value":"JÖNKÖPING","font":"\"TratexVersal\""}}]}},"right":{"anchor":{"x":"left","y":"middle-first"},"data":{"type":"skylt","properties":{"borderWidth":3,"background":"#097"},"elements":[{"type":"vagnr","properties":{"value":"26","background":"#06a"}},{"type":"text","properties":{"value":"HALMSTAD","font":"\"TratexVersal\""}},{"type":"newline"},{"type":"text","properties":{"value":"GISLAVED","font":"\"TratexVersal\""}},{"type":"text","properties":{"value":"C","font":"\"TratexVersal\"","color":"black","background":"white"}}]}}}}
     },
     {
-        "name": "F1-1: Trafikverkets exempel",
+        "name": "F1-1. Orienteringstavla, Trafikverkets exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"left","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LINDESBERG"}}]}}}}
     },
     {
-        "name": "F1-2: Exempel",
+        "name": "F1-2. Orienteringstavla, exempel",
         "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LISTA","font":"\"TratexVersal\""}}]}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"E20","background":"#097"}},{"type":"text","properties":{"value":"GÖTEBORG","font":"\"TratexVersal\""}},{"type":"newline"},{"type":"vagnr","properties":{"value":"56"}},{"type":"text","properties":{"value":"NORRKÖPING","font":"\"TratexVersal\""}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"TUMBO","font":"\"TratexVersal\""}}]}}}}
     },
     {
-        "name": "F1-2: Trafikverkets exempel",
+        "name": "F1-2. Orienteringstavla, Trafikverkets exempel",
         "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"text","properties":{"value":"KUMLA","font":"\"TratexVersal\""}}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"text","properties":{"value":"ÖREBRO","font":"\"TratexVersal\""}}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"text","properties":{"value":"KATRINEHOLM","font":"\"TratexVersal\""}}}}}
+    },
+    {
+        "name": "F10. Platsmärke, Trafikverkets exempel",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\""},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"text","properties":{"value":"NYKÖPING"}}}}}
+    },
+    {
+        "name": "F13. Avståndstavla, Trafikverkets exempel",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":3},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0},"elements":[{"type":"skylt","elements":[{"type":"text","properties":{"value":"STOCKHOLM"}},{"type":"newline"},{"type":"text","properties":{"value":"SÖDERTÄLJE"}}]},{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"text","properties":{"value":"105"}},{"type":"newline"},{"type":"text","properties":{"value":"71"}}]}]}}}}
     }
 ]
