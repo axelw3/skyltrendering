@@ -4,7 +4,7 @@
 // 3. Default value (from DEFAULT_PROPERTIES)
 // 4. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = ["color", "background", "font", "lineHeight", "borderRadius"]; // properties that can be inherited
+const INHERITED = ["color", "background", "font", "borderRadius"]; // properties that can be inherited
 
 const GLOBAL_DEFAULTS = {
     "borderWidth": 0,
@@ -17,21 +17,21 @@ const DEFAULTS = { // defaults (applied only to root tag)
     "borderWidth": 4,
     "borderRadius": 4,
     "font": "sans-serif",
-    "padding": 8,
-    "lineHeight": 42
+    "padding": 8
 };
 
 const DEFAULT_PROPERTIES = {
     "skylt": {
         "alignContents": "left",
-        "padding": 5
+        "padding": 5,
+        "lineSpacing": 4
     },
     "vagnr": {
         "value": "000",
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [16, 0]
+        "padding": [18, 10]
     },
     "text": {
         "value": "Text"
@@ -98,7 +98,7 @@ class SignElement{
             });
 
             canv.width = Math.max(...w) + 2 * padding[0];
-            canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1];
+            canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * r;
 
             roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -121,7 +121,7 @@ class SignElement{
 
             ch.forEach((c2, i) => {
                 if(c2.isNewline || i == 0){
-                    if(i > 0) y += h[c2.row];
+                    if(i > 0) y += (h[c2.row] + this.properties.lineSpacing);
 
                     if(c2.isNewline) return;
                 }
@@ -143,7 +143,7 @@ class SignElement{
                 let box = ctx.measureText(this.properties.value);
 
                 canv.width = box.width + 2 * padding[0];
-                canv.height = 1 + Math.floor(Math.max(this.properties.lineHeight/*, Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent)*/)) + 2 * padding[1];
+                canv.height = 1 + Math.floor(Math.max(Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent))) + 2 * padding[1];
 
                 roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -186,11 +186,15 @@ class SignElement{
 const SKYLTTYPER = {
     "junction": {
         "width": 120,
-        "height": 120,
+        "height": 240,
+
+        // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
+        "core": [.4, .6, .15, .5], // [leftX, rightX, topY, bottomY]
+
         "nodes": {
             "fwd": { "x": [.2, .8], "y": [0, 0]},
-            "right": { "x": [1.1, 1.1], "y": [.5, .5] },
-            "left": { "x": [0, 0], "y": [.5, .5] }
+            "right": { "x": [1, 1], "y": [.25, .25] },
+            "left": { "x": [0, 0], "y": [.25, .25] }
         }
     }
 };
@@ -226,13 +230,30 @@ const SKYLTTYPER = {
     svg.width = t.width;
     svg.height = t.height;
 
-    let boundingBox = [0, 0, t.width, t.height];
+    let svgBox = Array.from(t.core);
+    keys.forEach(nodeName => {
+        svgBox[0] = Math.min(svgBox[0], t.nodes[nodeName].x[0]);
+        svgBox[1] = Math.max(svgBox[1], t.nodes[nodeName].x[1]);
+        svgBox[2] = Math.min(svgBox[2], t.nodes[nodeName].y[0]);
+        svgBox[3] = Math.max(svgBox[3], t.nodes[nodeName].y[1]);
+    });
+
+    let boundingBox = [
+        svgBox[0] * t.width,
+        svgBox[1] * t.width,
+        svgBox[2] * t.height,
+        svgBox[3] * t.height
+    ];
 
     Promise.all([new Promise((resolve, reject) => {
         svg.src = "/svg/" + data.type + ".svg#" + keys.join("_");
         svg.onload = resolve;
         svg.onerror = reject;
     }), tratex.load(), tratexVersal.load()]).then(() => {
+        let svgRasterized = document.createElement("canvas");
+        Object.assign(svgRasterized, { width: t.width, height: t.height });
+        svgRasterized.getContext("2d").drawImage(svg, 0, 0, t.width, t.height);
+
         // fonts and svg loaded successfully
         let rendered = keys.map(nodeName => {
             let n = data.nodes[nodeName];
@@ -278,16 +299,16 @@ const SKYLTTYPER = {
 
             boundingBox = [
                 Math.min(boundingBox[0], leftX),
-                Math.min(boundingBox[1], topY),
-                Math.max(boundingBox[2], leftX + result.data.width),
+                Math.max(boundingBox[1], leftX + result.data.width),
+                Math.min(boundingBox[2], topY),
                 Math.max(boundingBox[3], topY + result.data.height)
             ];
 
             return {data: result.data, x: leftX, y: topY};
         });
 
-        canvas.width = 2 * prop.borderWidth + (boundingBox[2] - boundingBox[0]) + 2 * prop.padding;
-        canvas.height = 2 * prop.borderWidth + (boundingBox[3] - boundingBox[1]) + 2 * prop.padding;
+        canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
+        canvas.height = 2 * prop.borderWidth + (boundingBox[3] - boundingBox[2]) + 2 * prop.padding;
 
         ctx.fillStyle = prop.background;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -298,14 +319,41 @@ const SKYLTTYPER = {
             ctx.drawImage(
                 res.data,
                 prop.padding + prop.borderWidth + res.x - boundingBox[0],
-                prop.padding + prop.borderWidth + res.y - boundingBox[1]
+                prop.padding + prop.borderWidth + res.y - boundingBox[2]
             );
         });
 
+        // TODO: utöka svgBox så mycket som ryms (utan att skylten behöver växa), men maximalt till [0, 1, 0, 1]
+
+        svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
+        svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));
+        svgBox[2] = Math.min(1, Math.max(0, boundingBox[2] / t.height));
+        svgBox[3] = Math.max(0, Math.min(1, boundingBox[3] / t.height));
+
+        console.log(svgBox);
+
+        /*ctx.fillStyle = "black";
+        ctx.fillRect(
+            prop.padding + prop.borderWidth - boundingBox[0] + svgBox[0] * t.width,
+            prop.padding + prop.borderWidth - boundingBox[2] + svgBox[2] * t.height,
+            (svgBox[1] - svgBox[0]) * t.width,
+            (svgBox[3] - svgBox[2]) * t.height
+        );*/
+
+        let crop = [
+            svgBox[0] * t.width,
+            svgBox[2] * t.height,
+            (svgBox[1] - svgBox[0]) * t.width,
+            (svgBox[3] - svgBox[2]) * t.height
+        ]; // [x0, y0, w, h]
+
         ctx.drawImage(
-            svg,
-            prop.padding + prop.borderWidth - boundingBox[0],
-            prop.padding + prop.borderWidth - boundingBox[1], t.width, t.height
+            svgRasterized,
+            crop[0], crop[1], // sx, sy
+            crop[2], crop[3], // sw, sh
+            prop.padding + prop.borderWidth - boundingBox[0] + crop[0], // dx
+            prop.padding + prop.borderWidth - boundingBox[2] + crop[1], // dy
+            crop[2], crop[3] // dw, dh
         );
     }, (err) => {
         console.error(err);
