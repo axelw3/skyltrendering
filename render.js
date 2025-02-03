@@ -246,7 +246,7 @@ const SKYLTTYPER = {
     ];
 
     Promise.all([new Promise((resolve, reject) => {
-        svg.src = "/svg/" + data.type + ".svg#" + keys.join("_");
+        svg.src = "svg/" + data.type + ".svg#" + keys.join("_");
         svg.onload = resolve;
         svg.onerror = reject;
     }), tratex.load(), tratexVersal.load()]).then(() => {

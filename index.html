@@ -70,7 +70,7 @@
     let data_input = document.getElementById("input"), fr = document.getElementById("render");
 
     data_input.addEventListener("change", () => {
-        fr.setAttribute("src", "/render.html?data=" + window.encodeURIComponent(JSON.stringify(JSON.parse(data_input.value))));
+        fr.setAttribute("src", "render.html?data=" + window.encodeURIComponent(JSON.stringify(JSON.parse(data_input.value))));
     });
 
     data_input.dispatchEvent(new Event("change"));
