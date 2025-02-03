@@ -6,7 +6,9 @@
         <link rel="stylesheet" href="styles.css">
     </head>
     <body>
-        <div id="left"><textarea spellcheck="false" id="input">{
+        <div id="header"><select id="selectTemplate"><option value="-1" disabled selected>Välj en mall...</option></select></div>
+        <div id="main">
+            <div id="left"><textarea spellcheck="false" id="input">{
     "type": "junction",
     "properties": {
         "background": "#06a",
@@ -63,10 +65,40 @@
         }
     }
 }</textarea>
+            </div>
+            <div id="right"><iframe id="render" src="about:blank"></iframe></div>
         </div>
-        <div id="right"><iframe id="render" src="about:blank"></iframe></div>
         <script>
 (function(){
+    let getJSON = url => {
+        return new Promise((resolve, reject) => {
+            let req = new XMLHttpRequest();
+            req.addEventListener("load", () => {
+                resolve(JSON.parse(req.responseText));
+            });
+            req.open("GET", url);
+            req.send();
+        });
+    };
+
+    getJSON("templates.json").then(templateData => {
+        let templateSelect = document.getElementById("selectTemplate");
+
+        templateData.forEach((template, i) => {
+            let option_el = document.createElement("option");
+            option_el.appendChild(document.createTextNode(template.name));
+            option_el.setAttribute("value", i.toString(10));
+            templateSelect.appendChild(option_el);
+        });
+
+        templateSelect.value = -1;
+
+        templateSelect.addEventListener("change", () => {
+            data_input.value = JSON.stringify(templateData[parseInt(templateSelect.value)].json, null, 4);
+            data_input.dispatchEvent(new Event("change"));
+        });
+    });
+
     let data_input = document.getElementById("input"), fr = document.getElementById("render");
 
     data_input.addEventListener("change", () => {

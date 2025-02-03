@@ -3,6 +3,7 @@ body, html{
     padding: 0;
     width: 100%;
     height: 100%;
+    overflow: hidden;
 }
 
 #left, #right{
@@ -27,4 +28,18 @@ body, html{
 #input, #render{
     border: 0;
     resize: none;
+}
+
+#header, #main{
+    width: 100%;
+    float: left;
+}
+
+#header{
+    height: 24px;
+    background: #eee;
+}
+
+#main{
+    height: calc(100% - 24px);
 }
