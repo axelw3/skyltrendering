@@ -188,9 +188,9 @@ const SKYLTTYPER = {
         "width": 120,
         "height": 120,
         "nodes": {
-            "fwd": { "x": [24, 100], "y": [0, 0]},
-            "right": { "x": [130, 130], "y": [60, 60] },
-            "left": { "x": [0, 0], "y": [60, 60] }
+            "fwd": { "x": [.2, .8], "y": [0, 0]},
+            "right": { "x": [1.1, 1.1], "y": [.5, .5] },
+            "left": { "x": [0, 0], "y": [.5, .5] }
         }
     }
 };
@@ -240,7 +240,7 @@ const SKYLTTYPER = {
 
             let result = s.render();
 
-            let leftX = t.nodes[nodeName].x, topY = t.nodes[nodeName].y;
+            let leftX = t.nodes[nodeName].x.map(x => x * t.width), topY = t.nodes[nodeName].y.map(y => y * t.height);
 
             switch(n.anchor.x){
                 case "right":
