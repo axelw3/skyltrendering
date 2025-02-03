@@ -2,8 +2,14 @@
 // 1. Specified value
 // 2. Value from parent (if property is inherited)
 // 3. Default value (from DEFAULT_PROPERTIES)
+// 4. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = ["color", "background", "font"]; // properties that can be inherited
+const INHERITED = ["color", "background", "font", "lineHeight", "borderRadius"]; // properties that can be inherited
+
+const GLOBAL_DEFAULTS = {
+    "borderWidth": 0,
+    "padding": [0, 0]
+};
 
 const DEFAULTS = { // defaults (applied only to root tag)
     "background": "navy",
@@ -11,7 +17,8 @@ const DEFAULTS = { // defaults (applied only to root tag)
     "borderWidth": 4,
     "borderRadius": 4,
     "font": "sans-serif",
-    "padding": 8
+    "padding": 8,
+    "lineHeight": 42
 };
 
 const DEFAULT_PROPERTIES = {
@@ -24,7 +31,7 @@ const DEFAULT_PROPERTIES = {
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [12, 0]
+        "padding": [16, 0]
     },
     "text": {
         "value": "Text"
@@ -45,7 +52,7 @@ class SignElement{
             prop[key] = parentProperties[key];
         });
 
-        this.properties = Object.assign({}, DEFAULT_PROPERTIES[data.type], prop);
+        this.properties = Object.assign({}, GLOBAL_DEFAULTS, DEFAULT_PROPERTIES[data.type], prop);
         this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
     }
 
@@ -55,8 +62,11 @@ class SignElement{
 
         let firstLastCenter = [0, 0, 0, 0]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
-        let padding = this.properties.padding || [0, 0];
-        if(!Array.isArray(padding)) padding = [padding, padding];
+        let padding = this.properties.padding;
+        padding = Array.isArray(padding) ? Array.from(padding) : [padding, padding];
+
+        let bw = this.properties.borderWidth;
+        padding[0] += bw; padding[1] += bw;
 
         if(this.type == "skylt"){
             let w = [], h = [], j = 0;
@@ -64,7 +74,7 @@ class SignElement{
             let r = 0;
 
             let ch = this.children.map((c, i) => {
-                let c2 = { isNewline: c.type == "newline", data: c.render().data, row: r };
+                let c2 = { isNewline: c.type == "newline", r: c.render(), row: r };
                 if(c2.isNewline || i == 0){
                     j = w.length;
                     w.push(0);
@@ -79,18 +89,20 @@ class SignElement{
                     }
 
                     c2.x = w[j];
-                    w[j] += c2.data.width;
+                    w[j] += c2.r.data.width;
 
-                    if(c2.data.height > h[j]) h[j] = c2.data.height;
+                    if(c2.r.data.height > h[j]) h[j] = c2.r.data.height;
                 }
 
                 return c2;
-            }).map((c2, i) => {
-                if(i == 0){
-                    canv.width = Math.max(...w) + 2 * padding[0];
-                    canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1];
-                }
+            });
 
+            canv.width = Math.max(...w) + 2 * padding[0];
+            canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1];
+
+            roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
+
+            ch = ch.map(c2 => {
                 if(c2.isNewline) return c2;
 
                 switch(this.properties.alignContents){
@@ -98,15 +110,12 @@ class SignElement{
                         c2.x += Math.floor((canv.width - w[c2.row]) / 2);
                         break;
                     case "right":
-                        c2.x += canv.width - w[c2.row];
+                        c2.x += canv.width - w[c2.row] - padding[0];
                         break;
                 }
 
                 return c2;
             });
-
-            ctx.fillStyle = this.properties.background;
-            ctx.fillRect(0, 0, canv.width, canv.height);
 
             let y = 0;
 
@@ -117,59 +126,57 @@ class SignElement{
                     if(c2.isNewline) return;
                 }
 
-                ctx.drawImage(c2.data, padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.data.height) / 2));
+                ctx.drawImage(c2.r.data, padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2));
             });
 
             // mitt-x (element)
-            firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].data.width / 2);
-            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].data.width / 2);
+            firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.data.width / 2);
+            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.data.width / 2);
 
             // mitt-y (rad)
             firstLastCenter[1] = padding[1] + Math.floor(h[0] / 2);
             firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
-        }else{
-            if(this.type == "vagnr" || this.type == "text"){
+        }else if(this.type == "vagnr" || this.type == "text"){
                 ctx.font = "32px " + this.properties.font;
                 ctx.textBaseline = "middle";
 
                 let box = ctx.measureText(this.properties.value);
 
-                canv.height = Math.abs(box.fontBoundingBoxAscent) + Math.abs(box.fontBoundingBoxDescent) + 2 * padding[1];
-
-                let textX = padding[0];
                 canv.width = box.width + 2 * padding[0];
+                canv.height = 1 + Math.floor(Math.max(this.properties.lineHeight/*, Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent)*/)) + 2 * padding[1];
 
-                let bw = this.properties.borderWidth || 0;
-                canv.width += 2 * bw;
+                roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
-                if(this.type == "vagnr"){
-                    ctx.fillStyle = this.properties.background;
-                    ctx.fillRect(0, 0, canv.width, canv.height);
-
-                    if(bw > 0){
-                        roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius);
-
-                        if(this.properties.dashedInset){
-                            roundedRect(ctx, 2 * bw, 2 * bw, canv.width - 4 * bw, canv.height - 4 * bw, bw, this.properties.color, this.properties.borderRadius, [10, 10]);
-                        }
-                    }
-
-                    textX += bw;
+                if(this.properties.dashedInset){
+                    roundedRect(
+                        ctx,
+                        2 * bw, 2 * bw,
+                        canv.width - 4 * bw, canv.height - 4 * bw,
+                        bw,
+                        this.properties.color,
+                        this.properties.borderRadius,
+                        "transparent",
+                        [10, 10]
+                    );
                 }
 
                 ctx.font = "32px " + this.properties.font;
                 ctx.textBaseline = "middle";
 
+                firstLastCenter[0] = Math.floor(canv.width / 2);
+                firstLastCenter[1] = Math.floor(canv.height / 2);
+                firstLastCenter[2] = firstLastCenter[0];
+                firstLastCenter[3] = firstLastCenter[1];
+
                 ctx.fillStyle = this.properties.color;
-                ctx.fillText(this.properties.value, textX, Math.floor(canv.height / 2));
-            }else if(this.type == "newline"){
+                ctx.fillText(this.properties.value, padding[0], firstLastCenter[1]);
+        }else{
+            if(this.type == "newline"){
                 canv.width = 0;
                 canv.height = 0;
             }else{
                 alert("Fel!");
             }
-
-            firstLastCenter = [Math.floor(canv.width / 2), Math.floor(canv.height / 2), Math.floor(canv.width / 2), Math.floor(canv.height / 2)];
         }
 
         return {flc: firstLastCenter, data: canv};
@@ -181,7 +188,7 @@ const SKYLTTYPER = {
         "width": 120,
         "height": 120,
         "nodes": {
-            "fwd": { "x": [20, 100], "y": [0, 0]},
+            "fwd": { "x": [24, 100], "y": [0, 0]},
             "right": { "x": [130, 130], "y": [60, 60] },
             "left": { "x": [0, 0], "y": [60, 60] }
         }
@@ -213,7 +220,7 @@ const SKYLTTYPER = {
     const ctx = canvas.getContext("2d");
     let t = SKYLTTYPER[data.type];
     let keys = Object.keys(t.nodes).sort().filter(nodeName => !!data.nodes[nodeName]);
-    let prop = Object.assign({}, DEFAULTS, data.properties);
+    let prop = Object.assign({}, GLOBAL_DEFAULTS, DEFAULTS, data.properties);
 
     let svg = document.createElement("img");
     svg.width = t.width;
