@@ -34,12 +34,39 @@ const DEFAULT_PROPERTIES = {
         "padding": [16, 10]
     },
     "text": {
-        "value": "Text"
+        "value": "Text",
+        "padding": [0, 4]
     },
     "newline": {}
 };
 
 const SKYLT_ELEMENT_SPACING_X = 8;
+
+const SKYLTTYPER = {
+    "junction": {
+        "width": 120,
+        "height": 240,
+
+        // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
+        "core": [.4, .6, .15, .36], // [leftX, rightX, topY, bottomY]
+
+        "nodes": {
+            "fwd": { "x": [.2, .8], "y": [0, 0]},
+            "right": { "x": [1, 1], "y": [.25, .25] },
+            "left": { "x": [0, 0], "y": [.25, .25] }
+        }
+    },
+    "roundabout": {
+        "width": 240,
+        "height": 480,
+        "core": [.35, .75, .09, .35],
+        "nodes": {
+            "fwd": { "x": [.5, .5], "y": [0, 0] },
+            "right": { "x": [.9, .9], "y": [.21, .21] },
+            "left": { "x": [.1, .1], "y": [.21, .21] }
+        }
+    }
+};
 
 class SignElement{
     constructor(data, parentProperties){
@@ -143,7 +170,7 @@ class SignElement{
                 let box = ctx.measureText(this.properties.value);
 
                 canv.width = box.width + 2 * padding[0];
-                canv.height = Math.floor(Math.max(Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent))) + 2 * padding[1];
+                canv.height = 2 * Math.ceil(Math.max(Math.abs(box.actualBoundingBoxAscent), Math.abs(box.actualBoundingBoxDescent))) + 2 * padding[1];
 
                 roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -162,6 +189,7 @@ class SignElement{
 
                 ctx.font = "32px " + this.properties.font;
                 ctx.textBaseline = "middle";
+                ctx.textAlign = "left";
 
                 firstLastCenter[0] = Math.floor(canv.width / 2);
                 firstLastCenter[1] = Math.floor(canv.height / 2);
@@ -182,22 +210,6 @@ class SignElement{
         return {flc: firstLastCenter, data: canv};
     }
 }
-
-const SKYLTTYPER = {
-    "junction": {
-        "width": 120,
-        "height": 240,
-
-        // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
-        "core": [.4, .6, .15, .36], // [leftX, rightX, topY, bottomY]
-
-        "nodes": {
-            "fwd": { "x": [.2, .8], "y": [0, 0]},
-            "right": { "x": [1, 1], "y": [.25, .25] },
-            "left": { "x": [0, 0], "y": [.25, .25] }
-        }
-    }
-};
 
 (function(){
     let url = new URL(window.location.href);
@@ -323,14 +335,10 @@ const SKYLTTYPER = {
             );
         });
 
-        // TODO: utöka svgBox så mycket som ryms (utan att skylten behöver växa), men maximalt till [0, 1, 0, 1]
-
         svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
         svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));
         svgBox[2] = Math.min(1, Math.max(0, boundingBox[2] / t.height));
         svgBox[3] = Math.max(0, Math.min(1, boundingBox[3] / t.height));
-
-        console.log(svgBox);
 
         /*ctx.fillStyle = "black";
         ctx.fillRect(
