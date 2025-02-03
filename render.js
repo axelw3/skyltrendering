@@ -31,7 +31,7 @@ const DEFAULT_PROPERTIES = {
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [18, 10]
+        "padding": [16, 10]
     },
     "text": {
         "value": "Text"
@@ -143,7 +143,7 @@ class SignElement{
                 let box = ctx.measureText(this.properties.value);
 
                 canv.width = box.width + 2 * padding[0];
-                canv.height = 1 + Math.floor(Math.max(Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent))) + 2 * padding[1];
+                canv.height = Math.floor(Math.max(Math.abs(2*box.actualBoundingBoxAscent), Math.abs(2*box.actualBoundingBoxDescent))) + 2 * padding[1];
 
                 roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -189,7 +189,7 @@ const SKYLTTYPER = {
         "height": 240,
 
         // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
-        "core": [.4, .6, .15, .5], // [leftX, rightX, topY, bottomY]
+        "core": [.4, .6, .15, .36], // [leftX, rightX, topY, bottomY]
 
         "nodes": {
             "fwd": { "x": [.2, .8], "y": [0, 0]},
@@ -268,7 +268,7 @@ const SKYLTTYPER = {
                     leftX = leftX[1] - result.data.width;
                     break;
                 case "center":
-                    leftX = Math.floor((leftX[0] + leftX[1] - result.data.width) / 2);
+                    leftX = Math.floor((leftX[0] + leftX[1]) / 2 - Math.floor(result.data.width / 2));
                     break;
                 case "center-first":
                     leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[0];
@@ -285,7 +285,7 @@ const SKYLTTYPER = {
                     topY = topY[1] - result.data.height;
                     break;
                 case "middle":
-                    topY = Math.floor((topY[0] + topY[1] - result.data.height) / 2);
+                    topY = Math.floor((topY[0] + topY[1]) / 2) - Math.floor(result.data.height / 2);
                     break;
                 case "middle-first":
                     topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[1];

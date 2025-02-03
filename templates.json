@@ -6,5 +6,9 @@
     {
         "name": "F1-1: Mer komplicerat exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"vagnr","properties":{"value":"26"}},{"type":"vagnr","properties":{"value":"40"}},{"type":"text","properties":{"value":"JÖNKÖPING","font":"\"TratexVersal\""}}]}},"right":{"anchor":{"x":"left","y":"middle-first"},"data":{"type":"skylt","properties":{"borderWidth":3,"background":"#097"},"elements":[{"type":"vagnr","properties":{"value":"26","background":"#06a"}},{"type":"text","properties":{"value":"HALMSTAD","font":"\"TratexVersal\""}},{"type":"newline"},{"type":"text","properties":{"value":"GISLAVED","font":"\"TratexVersal\""}},{"type":"text","properties":{"value":"C","font":"\"TratexVersal\"","color":"black","background":"white"}}]}}}}
+    },
+    {
+        "name": "F1-1: Trafikverkets exempel",
+        "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"left","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LINDESBERG"}}]}}}}
     }
 ]
