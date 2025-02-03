@@ -10,5 +10,13 @@
     {
         "name": "F1-1: Trafikverkets exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"left","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LINDESBERG"}}]}}}}
+    },
+    {
+        "name": "F1-2: Exempel",
+        "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LISTA","font":"\"TratexVersal\""}}]}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"E20","background":"#097"}},{"type":"text","properties":{"value":"GÖTEBORG","font":"\"TratexVersal\""}},{"type":"newline"},{"type":"vagnr","properties":{"value":"56"}},{"type":"text","properties":{"value":"NORRKÖPING","font":"\"TratexVersal\""}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"TUMBO","font":"\"TratexVersal\""}}]}}}}
+    },
+    {
+        "name": "F1-2: Trafikverkets exempel",
+        "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"text","properties":{"value":"KUMLA","font":"\"TratexVersal\""}}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"text","properties":{"value":"ÖREBRO","font":"\"TratexVersal\""}}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"text","properties":{"value":"KATRINEHOLM","font":"\"TratexVersal\""}}}}}
     }
 ]
