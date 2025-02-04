@@ -1,17 +1,17 @@
 // Priority:
 // 1. Specified value
 // 2. Value from parent (if property is inherited)
-// 3. Default value (from DEFAULT_PROPERTIES)
+// 3. Default value (from DEFAULT_PROPERTIES or DEFAULTS)
 // 4. Global defaults (GLOBAL_DEFAULTS)
 
 const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight"]; // properties that can be inherited
 
 const GLOBAL_DEFAULTS = {
     "borderWidth": 0,
-    "padding": [0, 0]
+    "padding": 0
 };
 
-const DEFAULTS = { // defaults (applied only to root tag)
+const DEFAULTS = { // defaults (applied only to the root tag)
     "background": "navy",
     "color": "white",
     "borderWidth": 4,
@@ -74,6 +74,14 @@ const SKYLTTYPER = {
             "right": { "x": [.9, .9], "y": [.21, .21] },
             "left": { "x": [.1, .1], "y": [.21, .21] }
         }
+    },
+    "water": {
+        "width": 209,
+        "height": 19,
+        "core": [0, 1, 0, 1],
+        "nodes": {
+            "name": { "x": [.5, .5], "y": [-.2, -.2] }
+        }
     }
 };
 
@@ -84,7 +92,7 @@ class SignElement{
         let prop = data.properties || {};
 
         INHERITED.forEach(key => {
-            if(!!prop[key]) return;
+            if(prop[key] !== undefined) return;
             prop[key] = parentProperties[key];
         });
 
@@ -107,34 +115,30 @@ class SignElement{
         if(this.type == "skylt"){
             let w = [], h = [], j = 0;
 
-            let r = 0;
-
             let ch = this.children.map((c, i) => {
-                let c2 = { isNewline: c.type == "newline", r: c.render(), row: r };
+                let c2 = { isNewline: c.type == "newline", r: c.render().data, row: j };
                 if(c2.isNewline || i == 0){
                     j = w.length;
                     w.push(0);
                     h.push(0);
                 }
 
-                if(c2.isNewline){
-                    r++;
-                }else{
+                if(!c2.isNewline){
                     if(w[j] > 0){
                         w[j] += SKYLT_ELEMENT_SPACING_X;
                     }
 
                     c2.x = w[j];
-                    w[j] += c2.r.data.width;
+                    w[j] += c2.r.width;
 
-                    if(c2.r.data.height > h[j]) h[j] = c2.r.data.height;
+                    if(c2.r.height > h[j]) h[j] = c2.r.height;
                 }
 
                 return c2;
             });
 
             canv.width = Math.max(...w) + 2 * padding[0];
-            canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * r;
+            canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * j;
 
             roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
@@ -162,24 +166,22 @@ class SignElement{
                     if(c2.isNewline) return;
                 }
 
-                ctx.drawImage(c2.r.data, padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2));
+                ctx.drawImage(c2.r, padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.height) / 2));
             });
 
             // mitt-x (element)
-            firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.data.width / 2);
-            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.data.width / 2);
+            firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.width / 2);
+            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.width / 2);
 
             // mitt-y (rad)
             firstLastCenter[1] = padding[1] + Math.floor(h[0] / 2);
             firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
         }else if(this.type == "vagnr" || this.type == "text"){
                 ctx.font = "32px " + this.properties.font;
-                //ctx.textBaseline = "middle";
 
                 let box = ctx.measureText(this.properties.value);
 
                 canv.width = box.width + 2 * padding[0];
-                //canv.height = 2 * Math.ceil(Math.max(Math.abs(box.actualBoundingBoxAscent), Math.abs(box.actualBoundingBoxDescent))) + 2 * padding[1];
                 canv.height = this.properties.lineHeight + 2 * padding[1];
 
                 roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
@@ -208,16 +210,14 @@ class SignElement{
 
                 ctx.fillStyle = this.properties.color;
                 ctx.fillText(this.properties.value, padding[0], firstLastCenter[1]);
+        }else if(this.type == "newline"){
+            canv.width = 0;
+            canv.height = 0;
         }else{
-            if(this.type == "newline"){
-                canv.width = 0;
-                canv.height = 0;
-            }else{
-                alert("Fel!");
-            }
+            alert("Fel!");
         }
 
-        return {flc: firstLastCenter, data: canv};
+        return { flc: firstLastCenter, data: canv };
     }
 }
 

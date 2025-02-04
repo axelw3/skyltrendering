@@ -24,6 +24,10 @@
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\""},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"text","properties":{"value":"NYKÖPING"}}}}}
     },
     {
+        "name": "F12. Vattendrag, Trafikverkets exempel",
+        "json": {"type":"water","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"name":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"text","properties":{"value":"DALÄLVEN"}}}}}
+    },
+    {
         "name": "F13. Avståndstavla, Trafikverkets exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0},"elements":[{"type":"skylt","elements":[{"type":"text","properties":{"value":"STOCKHOLM"}},{"type":"newline"},{"type":"text","properties":{"value":"SÖDERTÄLJE"}}]},{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"text","properties":{"value":"105"}},{"type":"newline"},{"type":"text","properties":{"value":"71"}}]}]}}}}
     },
