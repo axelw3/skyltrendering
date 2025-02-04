@@ -22,10 +22,6 @@ const DEFAULTS = { // defaults (applied only to the root tag)
 };
 
 const DEFAULT_PROPERTIES = {
-    "_noderoot": {
-        "anchorForwarded": true,
-        "lineSpacing": 0
-    },
     "skylt": {
         "padding": 5,
         "lineSpacing": 4,
@@ -90,6 +86,24 @@ const SKYLTTYPER = {
 };
 
 class SignElement{
+    static drawWithBorder(ctx, x0, y0, innerContents, properties, borderBoxW){
+        roundedRect(
+            ctx,
+            x0, y0,
+            borderBoxW, innerContents.height + 2 * properties.borderWidth,
+            properties.borderWidth,
+            properties.color,
+            properties.borderRadius,
+            properties.background
+        );
+
+        ctx.drawImage(
+            innerContents,
+            x0 + properties.borderWidth,
+            y0 + properties.borderWidth
+        );
+    }
+
     constructor(data, parentProperties){
         this.type = data.type;
 
@@ -116,20 +130,16 @@ class SignElement{
         //let bw = this.properties.borderWidth;
         //padding[0] += bw; padding[1] += bw;
 
-        if(this.type == "skylt" || this.type == "_noderoot"){
+        if(this.type == "skylt"){
             let w = [0], h = [0], j = 0;
 
             let ch = this.children.map((c, i) => {
                 let c2 = { isNewline: c.type == "newline", r: c.render(), row: j, bw: c.properties.borderWidth };
-                if(i > 0 && (c2.isNewline || this.properties.blockDisplay)){
-                    j = ++c2.row;
-                    w.push(0);
-                    h.push(0);
-                }else if(w[j] > 0){
-                    w[j] += SKYLT_ELEMENT_SPACING_X;
-                }
-
                 if(!c2.isNewline){
+                    if(w[j] > 0){
+                        w[j] += SKYLT_ELEMENT_SPACING_X;
+                    }
+
                     c2.x = w[j];
                     w[j] += c2.r.data.width + 2 * c2.bw;
 
@@ -137,8 +147,16 @@ class SignElement{
                     if(h0 > h[j]) h[j] = h0;
                 }
 
+                if((i > 0 && c2.isNewline) || this.properties.blockDisplay){
+                    j++;
+                    w.push(0);
+                    h.push(0);
+                }
+
                 return c2;
             });
+
+            if(this.properties.blockDisplay) j--;
 
             canv.width = Math.max(...w) + 2 * padding[0];
             canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * j;
@@ -169,81 +187,69 @@ class SignElement{
                     if(c2.isNewline) return;
                 }
 
-                let border = [
-                    padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2) - c2.bw,
-                    c2.r.data.width + 2 * c2.bw, c2.r.data.height + 2 * c2.bw
-                ];
-
-                if(this.properties.blockDisplay){
-                    border[0] = padding[0];
-                    border[2] = canv.width - 2 * padding[0];
-                }
-
-                roundedRect(
+                SignElement.drawWithBorder(
                     ctx,
-                    border[0], border[1],
-                    border[2], border[3],
-                    c2.bw,
-                    this.children[i].properties.color,
-                    this.children[i].properties.borderRadius,
-                    this.children[i].properties.background
-                );
-
-                ctx.drawImage(
+                    padding[0] + (this.properties.blockDisplay ? 0 : c2.x),
+                    padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2) - c2.bw,
                     c2.r.data,
-                    padding[0] + c2.x + c2.bw, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2)
+                    this.children[i].properties,
+                    this.properties.blockDisplay ? (canv.width - 2 * padding[0]) : (c2.r.data.width + 2 * c2.bw)
                 );
             });
 
+            // mitt-x (element), se även if-sats nedan
+            firstLastCenter[0] = padding[0] + ch[0].x + ch[0].bw;
+            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bw;
+
+            // mitt-y (rad), se även if-sats nedan
+            firstLastCenter[1] = padding[1];
+            firstLastCenter[3] = canv.height - padding[1];
+
             if(this.properties.anchorForwarded){
-                // mitt-x (element)
-                firstLastCenter[0] = padding[0] + ch[0].x + ch[0].bw + ch[0].r.flc[0];
-                firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bw + ch[ch.length - 1].r.flc[2];
-
-                // mitt-y (rad)
-                firstLastCenter[1] = padding[1] + ch[0].bw + ch[0].r.flc[1];
-                firstLastCenter[3] = canv.height - padding[1] - h[h.length - 1] + ch[ch.length - 1].bw + ch[ch.length - 1].r.flc[3];
+                firstLastCenter[0] += ch[0].r.flc[0];
+                firstLastCenter[1] += ch[0].bw + ch[0].r.flc[1];
+                firstLastCenter[2] += ch[ch.length - 1].r.flc[2];
+                firstLastCenter[3] += ch[ch.length - 1].bw - h[h.length - 1] + ch[ch.length - 1].r.flc[3];
             }else{
-                // mitt-x (element)
-                firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.data.width / 2) + ch[0].bw;
-                firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.data.width / 2) + ch[ch.length - 1].bw;
-
-                // mitt-y (rad)
-                firstLastCenter[1] = padding[1] + Math.floor(h[0] / 2);
-                firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
+                firstLastCenter[0] += Math.floor(ch[0].r.data.width / 2);
+                firstLastCenter[1] += Math.floor(h[0] / 2);
+                firstLastCenter[2] += Math.floor(ch[ch.length - 1].r.data.width / 2);
+                firstLastCenter[3] += Math.floor(-h[h.length - 1] / 2);
             }
         }else if(this.type == "vagnr" || this.type == "text"){
-                ctx.font = "32px " + this.properties.font;
+            ctx.font = "32px " + this.properties.font;
 
-                let box = ctx.measureText(this.properties.value);
+            let box = ctx.measureText(this.properties.value);
 
-                canv.width = box.width + 2 * padding[0];
-                canv.height = this.properties.lineHeight + 2 * padding[1];
+            canv.width = Math.floor(box.width) + 2 * padding[0];
+            canv.height = this.properties.lineHeight + 2 * padding[1];
 
-                if(this.properties.dashedInset){
-                    roundedRect(
-                        ctx,
-                        bw, bw,
-                        canv.width - 2 * bw, canv.height - 2 * bw,
-                        bw,
-                        this.properties.color,
-                        this.properties.borderRadius,
-                        "transparent",
-                        [10, 10]
-                    );
-                }
+            if(this.properties.dashedInset){
+                let bw = this.properties.borderWidth;
 
-                ctx.font = "32px " + this.properties.font;
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "left";
+                roundedRect(
+                    ctx,
+                    bw, bw,
+                    canv.width - 2 * bw, canv.height - 2 * bw,
+                    bw,
+                    this.properties.color,
+                    this.properties.borderRadius,
+                    "transparent",
+                    [10, 10]
+                );
+            }
 
-                firstLastCenter[0] = Math.floor(canv.width / 2);
-                firstLastCenter[1] = Math.floor(canv.height / 2);
-                firstLastCenter[2] = firstLastCenter[0];
-                firstLastCenter[3] = firstLastCenter[1];
+            ctx.font = "32px " + this.properties.font;
+            ctx.textBaseline = "middle";
+            ctx.textAlign = "left";
 
-                ctx.fillStyle = this.properties.color;
-                ctx.fillText(this.properties.value, padding[0], firstLastCenter[1]);
+            firstLastCenter[0] = Math.floor(canv.width / 2);
+            firstLastCenter[1] = Math.floor(canv.height / 2);
+            firstLastCenter[2] = firstLastCenter[0];
+            firstLastCenter[3] = firstLastCenter[1];
+
+            ctx.fillStyle = this.properties.color;
+            ctx.fillText(this.properties.value, padding[0], firstLastCenter[1]);
         }else if(this.type == "newline"){
             canv.width = 0;
             canv.height = 0;
@@ -313,18 +319,20 @@ class SignElement{
         // fonts and svg loaded successfully
         let rendered = keys.map(nodeName => {
             let n = data.nodes[nodeName];
-            let s = new SignElement({ "type": "_noderoot", "elements": [n.data] }, prop);
+            let s = new SignElement(n.data, prop);
 
             let result = s.render();
 
-            let leftX = t.nodes[nodeName].x.map(x => x * t.width), topY = t.nodes[nodeName].y.map(y => y * t.height);
+            let rse = [ result.data.width + 2 * s.properties.borderWidth, result.data.height + 2 * s.properties.borderWidth ];
+
+            let leftX = t.nodes[nodeName].x.map(x => x * t.width).map(Math.floor), topY = t.nodes[nodeName].y.map(y => y * t.height).map(Math.floor);
 
             switch(n.anchor.x){
                 case "right":
-                    leftX = leftX[1] - result.data.width;
+                    leftX = leftX[1] - rse[0];
                     break;
                 case "center":
-                    leftX = Math.floor((leftX[0] + leftX[1]) / 2 - Math.floor(result.data.width / 2));
+                    leftX = Math.floor((leftX[0] + leftX[1]) / 2 - Math.floor(rse[0] / 2));
                     break;
                 case "center-first":
                     leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[0];
@@ -338,16 +346,16 @@ class SignElement{
 
             switch(n.anchor.y){
                 case "bottom":
-                    topY = topY[1] - result.data.height;
+                    topY = topY[1] - rse[1];
                     break;
                 case "middle":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - Math.floor(result.data.height / 2);
+                    topY = Math.floor((topY[0] + topY[1]) / 2) - Math.floor(rse[1] / 2);
                     break;
                 case "middle-first":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[1];
+                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[1] - s.properties.borderWidth;
                     break;
                 case "middle-last":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[3];
+                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[3] - s.properties.borderWidth;
                     break;
                 default:
                     topY = topY[0];
@@ -355,12 +363,12 @@ class SignElement{
 
             boundingBox = [
                 Math.min(boundingBox[0], leftX),
-                Math.max(boundingBox[1], leftX + result.data.width),
+                Math.max(boundingBox[1], leftX + rse[0]),
                 Math.min(boundingBox[2], topY),
-                Math.max(boundingBox[3], topY + result.data.height)
+                Math.max(boundingBox[3], topY + rse[1])
             ];
 
-            return {data: result.data, x: leftX, y: topY};
+            return { data: result.data, x: leftX, y: topY, p: s.properties };
         });
 
         canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
@@ -372,10 +380,15 @@ class SignElement{
         roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, prop.borderRadius);
 
         rendered.forEach(res => {
-            ctx.drawImage(
+            let x0 = prop.padding + prop.borderWidth + res.x - boundingBox[0],
+                y0 = prop.padding + prop.borderWidth + res.y - boundingBox[2];
+
+            SignElement.drawWithBorder(
+                ctx,
+                x0, y0,
                 res.data,
-                prop.padding + prop.borderWidth + res.x - boundingBox[0],
-                prop.padding + prop.borderWidth + res.y - boundingBox[2]
+                res.p,
+                res.data.width + 2 * res.p.borderWidth
             );
         });
 
