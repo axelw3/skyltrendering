@@ -18,25 +18,29 @@ const DEFAULTS = { // defaults (applied only to the root tag)
     "borderRadius": 4,
     "font": "sans-serif",
     "padding": 8,
-    "lineHeight": 36
+    "lineHeight": 44
 };
 
 const DEFAULT_PROPERTIES = {
+    "_noderoot": {
+        "anchorForwarded": true,
+        "lineSpacing": 0
+    },
     "skylt": {
-        "alignContents": "left",
         "padding": 5,
-        "lineSpacing": 4
+        "lineSpacing": 4,
+        "blockDisplay": false,
+        "anchorForwarded": false
     },
     "vagnr": {
         "value": "000",
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [16, 6]
+        "padding": [14, 3]
     },
     "text": {
-        "value": "Text",
-        "padding": [0, 4]
+        "value": "Text"
     },
     "newline": {}
 };
@@ -80,7 +84,7 @@ const SKYLTTYPER = {
         "height": 19,
         "core": [0, 1, 0, 1],
         "nodes": {
-            "name": { "x": [.5, .5], "y": [-.2, -.2] }
+            "name": { "x": [.5, .5], "y": [-.1, -.1] }
         }
     }
 };
@@ -98,6 +102,8 @@ class SignElement{
 
         this.properties = Object.assign({}, GLOBAL_DEFAULTS, DEFAULT_PROPERTIES[data.type], prop);
         this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
+
+        if(!Array.isArray(this.properties.padding)) this.properties.padding = [this.properties.padding, this.properties.padding];
     }
 
     render(){
@@ -106,32 +112,29 @@ class SignElement{
 
         let firstLastCenter = [0, 0, 0, 0]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
-        let padding = this.properties.padding;
-        padding = Array.isArray(padding) ? Array.from(padding) : [padding, padding];
+        let padding = Array.from(this.properties.padding);
+        //let bw = this.properties.borderWidth;
+        //padding[0] += bw; padding[1] += bw;
 
-        let bw = this.properties.borderWidth;
-        padding[0] += bw; padding[1] += bw;
-
-        if(this.type == "skylt"){
-            let w = [], h = [], j = 0;
+        if(this.type == "skylt" || this.type == "_noderoot"){
+            let w = [0], h = [0], j = 0;
 
             let ch = this.children.map((c, i) => {
-                let c2 = { isNewline: c.type == "newline", r: c.render().data, row: j };
-                if(c2.isNewline || i == 0){
-                    j = w.length;
+                let c2 = { isNewline: c.type == "newline", r: c.render(), row: j, bw: c.properties.borderWidth };
+                if(i > 0 && (c2.isNewline || this.properties.blockDisplay)){
+                    j = ++c2.row;
                     w.push(0);
                     h.push(0);
+                }else if(w[j] > 0){
+                    w[j] += SKYLT_ELEMENT_SPACING_X;
                 }
 
                 if(!c2.isNewline){
-                    if(w[j] > 0){
-                        w[j] += SKYLT_ELEMENT_SPACING_X;
-                    }
-
                     c2.x = w[j];
-                    w[j] += c2.r.width;
+                    w[j] += c2.r.data.width + 2 * c2.bw;
 
-                    if(c2.r.height > h[j]) h[j] = c2.r.height;
+                    let h0 = c2.r.data.height + 2 * c2.bw;
+                    if(h0 > h[j]) h[j] = h0;
                 }
 
                 return c2;
@@ -139,8 +142,6 @@ class SignElement{
 
             canv.width = Math.max(...w) + 2 * padding[0];
             canv.height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * j;
-
-            roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
 
             ch = ch.map(c2 => {
                 if(c2.isNewline) return c2;
@@ -152,6 +153,8 @@ class SignElement{
                     case "right":
                         c2.x += canv.width - w[c2.row] - 2 * padding[0];
                         break;
+                    default:
+                        // "left" or unknown value (left-aligned is the default)
                 }
 
                 return c2;
@@ -160,22 +163,55 @@ class SignElement{
             let y = 0;
 
             ch.forEach((c2, i) => {
-                if(c2.isNewline || i == 0){
+                if(c2.isNewline || i == 0 || this.properties.blockDisplay){
                     if(i > 0) y += (h[c2.row] + this.properties.lineSpacing);
 
                     if(c2.isNewline) return;
                 }
 
-                ctx.drawImage(c2.r, padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.height) / 2));
+                let border = [
+                    padding[0] + c2.x, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2) - c2.bw,
+                    c2.r.data.width + 2 * c2.bw, c2.r.data.height + 2 * c2.bw
+                ];
+
+                if(this.properties.blockDisplay){
+                    border[0] = padding[0];
+                    border[2] = canv.width - 2 * padding[0];
+                }
+
+                roundedRect(
+                    ctx,
+                    border[0], border[1],
+                    border[2], border[3],
+                    c2.bw,
+                    this.children[i].properties.color,
+                    this.children[i].properties.borderRadius,
+                    this.children[i].properties.background
+                );
+
+                ctx.drawImage(
+                    c2.r.data,
+                    padding[0] + c2.x + c2.bw, padding[1] + y + Math.floor((h[c2.row] - c2.r.data.height) / 2)
+                );
             });
 
-            // mitt-x (element)
-            firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.width / 2);
-            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.width / 2);
+            if(this.properties.anchorForwarded){
+                // mitt-x (element)
+                firstLastCenter[0] = padding[0] + ch[0].x + ch[0].bw + ch[0].r.flc[0];
+                firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bw + ch[ch.length - 1].r.flc[2];
 
-            // mitt-y (rad)
-            firstLastCenter[1] = padding[1] + Math.floor(h[0] / 2);
-            firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
+                // mitt-y (rad)
+                firstLastCenter[1] = padding[1] + ch[0].bw + ch[0].r.flc[1];
+                firstLastCenter[3] = canv.height - padding[1] - h[h.length - 1] + ch[ch.length - 1].bw + ch[ch.length - 1].r.flc[3];
+            }else{
+                // mitt-x (element)
+                firstLastCenter[0] = padding[0] + ch[0].x + Math.floor(ch[0].r.data.width / 2) + ch[0].bw;
+                firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + Math.floor(ch[ch.length - 1].r.data.width / 2) + ch[ch.length - 1].bw;
+
+                // mitt-y (rad)
+                firstLastCenter[1] = padding[1] + Math.floor(h[0] / 2);
+                firstLastCenter[3] = canv.height + Math.floor(-h[h.length - 1] / 2) - padding[1];
+            }
         }else if(this.type == "vagnr" || this.type == "text"){
                 ctx.font = "32px " + this.properties.font;
 
@@ -184,13 +220,11 @@ class SignElement{
                 canv.width = box.width + 2 * padding[0];
                 canv.height = this.properties.lineHeight + 2 * padding[1];
 
-                roundedRect(ctx, 0, 0, canv.width, canv.height, bw, this.properties.color, this.properties.borderRadius, this.properties.background);
-
                 if(this.properties.dashedInset){
                     roundedRect(
                         ctx,
-                        2 * bw, 2 * bw,
-                        canv.width - 4 * bw, canv.height - 4 * bw,
+                        bw, bw,
+                        canv.width - 2 * bw, canv.height - 2 * bw,
                         bw,
                         this.properties.color,
                         this.properties.borderRadius,
@@ -279,7 +313,7 @@ class SignElement{
         // fonts and svg loaded successfully
         let rendered = keys.map(nodeName => {
             let n = data.nodes[nodeName];
-            let s = new SignElement(n.data, prop);
+            let s = new SignElement({ "type": "_noderoot", "elements": [n.data] }, prop);
 
             let result = s.render();
 

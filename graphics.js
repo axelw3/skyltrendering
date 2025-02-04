@@ -41,8 +41,8 @@ function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bor
 
     if(background != "transparent"){
         ctx.fillStyle = background;
-        ctx.fillRect(lineWidth, lineWidth + borderRadius, outerWidth - 2 * lineWidth, outerHeight - 2 * (lineWidth + borderRadius));
-        ctx.fillRect(lineWidth + borderRadius, lineWidth, outerWidth - 2 * (lineWidth + borderRadius), outerHeight - 2 * lineWidth);
+        ctx.fillRect(x0 + lineWidth, y0 + lineWidth + borderRadius, outerWidth - 2 * lineWidth, outerHeight - 2 * (lineWidth + borderRadius));
+        ctx.fillRect(x0 + lineWidth + borderRadius, y0 + lineWidth, outerWidth - 2 * (lineWidth + borderRadius), outerHeight - 2 * lineWidth);
     }
 
     let restX = 0;

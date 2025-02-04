@@ -34,5 +34,9 @@
     {
         "name": "F13. Avståndstavla, exempel med vägnummer",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"alignContents":"center"},"elements":[{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"123"}}]},{"type":"newline"},{"type":"skylt","elements":[{"type":"text","properties":{"value":"STOCKHOLM"}},{"type":"newline"},{"type":"text","properties":{"value":"SÖDERTÄLJE"}}]},{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"text","properties":{"value":"105"}},{"type":"newline"},{"type":"text","properties":{"value":"71"}}]}]}}}}
+    },
+    {
+        "name": "F6. Tabellvägvisare, enkelt exempel",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"text","properties":{"value":"STOCKHOLM"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"text","properties":{"value":"GÖTEBORG"}}]}]}}}}
     }
 ]
