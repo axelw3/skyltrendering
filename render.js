@@ -18,7 +18,8 @@ const DEFAULTS = { // defaults (applied only to the root tag)
     "borderRadius": 4,
     "font": "sans-serif",
     "padding": 8,
-    "lineHeight": 44
+    "lineHeight": 44,
+    "fillCorners": true
 };
 
 const DEFAULT_PROPERTIES = {
@@ -26,7 +27,8 @@ const DEFAULT_PROPERTIES = {
         "padding": 5,
         "lineSpacing": 4,
         "blockDisplay": false,
-        "anchorForwarded": false
+        "anchorForwarded": false,
+        "fillCorners": false
     },
     "vagnr": {
         "value": "000",
@@ -98,7 +100,7 @@ const SYMBOLER = {
 };
 
 class SignElement{
-    static drawWithBorder(ctx, x0, y0, innerContents, properties, borderBoxW){
+    static drawWithBorder(ctx, x0, y0, innerContents, properties, dx, dy, borderBoxW){
         roundedRect(
             ctx,
             x0, y0,
@@ -106,14 +108,27 @@ class SignElement{
             properties.borderWidth,
             properties.color,
             properties.borderRadius,
+            !!properties.fillCorners,
             properties.background
         );
 
         ctx.drawImage(
             innerContents,
-            x0 + properties.borderWidth,
-            y0 + properties.borderWidth
+            x0 + dx + properties.borderWidth,
+            y0 + dy + properties.borderWidth
         );
+    }
+
+    static calculateAlignmentOffset(alignMode, innerWidth, outerWidth){
+        switch(alignMode){
+            case "center":
+                return Math.floor((outerWidth - innerWidth) / 2);
+            case "right":
+                return outerWidth - innerWidth;
+            default:
+                // "left" or unknown value (left-aligned is the default)
+                return 0;
+        }
     }
 
     constructor(data, parentProperties){
@@ -177,16 +192,7 @@ class SignElement{
             ch = ch.map(c2 => {
                 if(c2.isNewline) return c2;
 
-                switch(this.properties.alignContents){
-                    case "center":
-                        c2.x += Math.floor((canv.width - 2 * padding[0] - w[c2.row]) / 2);
-                        break;
-                    case "right":
-                        c2.x += canv.width - w[c2.row] - 2 * padding[0];
-                        break;
-                    default:
-                        // "left" or unknown value (left-aligned is the default)
-                }
+                c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], canv.width - 2 * padding[0]);
 
                 return c2;
             });
@@ -223,13 +229,20 @@ class SignElement{
 
                 const y1 = y;
                 return c2.r.data.then(d => {
+                    let dx = 0, outerWidth = this.properties.blockDisplay ? (canv.width - 2 * padding[0]) : (c2.r.w + 2 * c2.bw);
+
+                    if(this.properties.blockDisplay){
+                        dx += SignElement.calculateAlignmentOffset(this.children[i].properties.alignContents, w[c2.row], outerWidth);
+                    }
+
                     SignElement.drawWithBorder(
                         ctx,
-                        padding[0] + (this.properties.blockDisplay ? 0 : c2.x),
+                        padding[0] + c2.x,
                         padding[1] + y1 + Math.floor((h[c2.row] - c2.r.h) / 2) - c2.bw,
                         d,
                         this.children[i].properties,
-                        this.properties.blockDisplay ? (canv.width - 2 * padding[0]) : (c2.r.w + 2 * c2.bw)
+                        dx, 0,
+                        outerWidth
                     );
                 });
             })).then(() => canv);
@@ -257,6 +270,7 @@ class SignElement{
                         bw,
                         this.properties.color,
                         this.properties.borderRadius,
+                        false,
                         "transparent",
                         [10, 10]
                     );
@@ -418,10 +432,10 @@ class SignElement{
         canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
         canvas.height = 2 * prop.borderWidth + (boundingBox[3] - boundingBox[2]) + 2 * prop.padding;
 
-        ctx.fillStyle = prop.background;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        //ctx.fillStyle = prop.background;
+        //ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, prop.borderRadius);
+        roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, prop.borderRadius, prop.fillCorners, prop.background);
 
         rendered.forEach(res => {
             let x0 = prop.padding + prop.borderWidth + res.x - boundingBox[0],
@@ -433,6 +447,7 @@ class SignElement{
                     x0, y0,
                     rendered,
                     res.p,
+                    0, 0,
                     rendered.width + 2 * res.p.borderWidth
                 );
             });

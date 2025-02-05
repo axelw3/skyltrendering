@@ -1,12 +1,12 @@
-function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, borderRadius, background = "transparent", lineDash = [1, 0]){
+function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, borderRadius, fillCorners = false, background = "transparent", lineDash = [1, 0]){
     // lineDash = [längd, mellanrum]
 
-    if(lineWidth <= 0){
-        if(background == "transparent") return;
+    if((lineWidth <= 0 || fillCorners) && background != "transparent"){
         ctx.fillStyle = background;
         ctx.fillRect(x0, y0, outerWidth, outerHeight);
-        return;
     }
+
+    if(lineWidth <= 0) return;
 
     let drawCorner = (cx, cy, signX, signY) => {
         ctx.beginPath();
@@ -23,7 +23,7 @@ function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bor
             ctx.fillRect(0, 0, canv.width, canv.height);
         */
 
-        if(background != "transparent"){
+        if(background != "transparent" && !fillCorners){
             ctx.beginPath();
             ctx.moveTo(cx, cy + signY * borderRadius);
             ctx.arcTo(cx + signX * borderRadius, cy + signY * borderRadius, cx + signX * borderRadius, cy, borderRadius);
@@ -39,7 +39,7 @@ function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bor
     drawCorner(x0 + lineWidth + borderRadius, y0 + outerHeight - lineWidth - borderRadius, -1, 1);
     drawCorner(x0 + outerWidth - lineWidth - borderRadius, y0 + outerHeight - lineWidth - borderRadius, 1, 1);
 
-    if(background != "transparent"){
+    if(background != "transparent" && !fillCorners){
         ctx.fillStyle = background;
         ctx.fillRect(x0 + lineWidth, y0 + lineWidth + borderRadius, outerWidth - 2 * lineWidth, outerHeight - 2 * (lineWidth + borderRadius));
         ctx.fillRect(x0 + lineWidth + borderRadius, y0 + lineWidth, outerWidth - 2 * (lineWidth + borderRadius), outerHeight - 2 * lineWidth);
