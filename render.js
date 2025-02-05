@@ -4,9 +4,10 @@
 // 3. Default value (from DEFAULT_PROPERTIES or DEFAULTS)
 // 4. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight"]; // properties that can be inherited
+const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight", "lineSpacing"]; // properties that can be inherited
 
 const GLOBAL_DEFAULTS = {
+    "borderFeatures": [],
     "borderWidth": 0,
     "padding": 0
 };
@@ -18,7 +19,7 @@ const DEFAULTS = { // defaults (applied only to the root tag)
     "borderRadius": 4,
     "font": "sans-serif",
     "padding": 8,
-    "lineHeight": 44,
+    "lineHeight": 46,
     "fillCorners": true
 };
 
@@ -35,7 +36,7 @@ const DEFAULT_PROPERTIES = {
         "borderWidth": 3,
         "borderRadius": 4,
         "dashedInset": false,
-        "padding": [14, 3]
+        "padding": [14, 2]
     },
     "text": {
         "value": "Text"
@@ -137,14 +138,24 @@ class SignElement{
         let prop = data.properties || {};
 
         INHERITED.forEach(key => {
-            if(prop[key] !== undefined) return;
+            if(prop[key] !== undefined || parentProperties[key] === undefined) return;
             prop[key] = parentProperties[key];
         });
 
         this.properties = Object.assign({}, GLOBAL_DEFAULTS, DEFAULT_PROPERTIES[data.type], prop);
         this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
 
-        if(!Array.isArray(this.properties.padding)) this.properties.padding = [this.properties.padding, this.properties.padding];
+        if(!Array.isArray(this.properties.padding)) this.properties.padding = [
+            this.properties.padding,
+            this.properties.padding
+        ];
+
+        if(this.properties.padding.length != 4) this.properties.padding = [
+            this.properties.padding[0], // vänster
+            this.properties.padding[1], // ovanför
+            this.properties.padding[0], // höger
+            this.properties.padding[1]  // nedanför
+        ];
     }
 
     render(){
@@ -154,20 +165,23 @@ class SignElement{
         let firstLastCenter = [0, 0, 0, 0]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         let padding = Array.from(this.properties.padding);
-        
+
         let width = 0, height = 0;
         let renderPromise = null;
 
         if(this.type == "skylt"){
             let w = [0], h = [0], j = 0;
 
+            let totalLineSpacing = 0;
+
             let ch = this.children.map((c, i) => {
                 let isn = c.type == "newline";
 
-                if(i > 0  && (isn || this.properties.blockDisplay)){
+                if(isn || (i > 0 && this.properties.blockDisplay)){
                     j++;
                     w.push(0);
                     h.push(0);
+                    totalLineSpacing += (this.properties.blockDisplay ? this.properties.lineSpacing : c.properties.lineSpacing);
                 }
 
                 let c2 = { isNewline: isn, r: c.render(), row: j, bw: c.properties.borderWidth };
@@ -186,13 +200,15 @@ class SignElement{
                 return c2;
             });
 
-            canv.width = width = Math.max(...w) + 2 * padding[0];
-            canv.height = height = h.reduce((a, b) => a + b, 0) + 2 * padding[1] + this.properties.lineSpacing * j;
+            canv.width = width = Math.max(...w) + padding[0] + padding[2];
+            canv.height = height = h.reduce((a, b) => a + b, 0) + padding[1] + padding[3] + totalLineSpacing;
 
             ch = ch.map(c2 => {
                 if(c2.isNewline) return c2;
 
-                c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], canv.width - 2 * padding[0]);
+                if(!this.properties.blockDisplay){
+                    c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], canv.width - padding[0] - padding[2]);
+                }
 
                 return c2;
             });
@@ -203,7 +219,7 @@ class SignElement{
 
             // mitt-y (rad), se även if-sats nedan
             firstLastCenter[1] = padding[1];
-            firstLastCenter[3] = canv.height - padding[1];
+            firstLastCenter[3] = canv.height - padding[3];
 
             if(this.properties.anchorForwarded){
                 firstLastCenter[0] += ch[0].r.flc[0];
@@ -220,8 +236,8 @@ class SignElement{
             let y = 0;
 
             renderPromise = Promise.all(ch.map((c2, i) => {
-                if(i > 0 && (c2.isNewline || this.properties.blockDisplay)){
-                    y += this.properties.lineSpacing;
+                if(c2.isNewline || (i > 0 && this.properties.blockDisplay)){
+                    y += this.children[i].properties.lineSpacing;
                     y += h[c2.row - 1];
                 }
 
@@ -229,7 +245,7 @@ class SignElement{
 
                 const y1 = y;
                 return c2.r.data.then(d => {
-                    let dx = 0, outerWidth = this.properties.blockDisplay ? (canv.width - 2 * padding[0]) : (c2.r.w + 2 * c2.bw);
+                    let dx = 0, outerWidth = this.properties.blockDisplay ? (canv.width - padding[0] - padding[2]) : (c2.r.w + 2 * c2.bw);
 
                     if(this.properties.blockDisplay){
                         dx += SignElement.calculateAlignmentOffset(this.children[i].properties.alignContents, w[c2.row], outerWidth);
@@ -251,8 +267,8 @@ class SignElement{
 
             let box = ctx.measureText(this.properties.value);
 
-            canv.width = width = Math.floor(box.width) + 2 * padding[0];
-            canv.height = height = this.properties.lineHeight + 2 * padding[1];
+            canv.width = width = Math.floor(box.width) + padding[0] + padding[2];
+            canv.height = height = this.properties.lineHeight + padding[1] + padding[3];
 
             firstLastCenter[0] = Math.floor(canv.width / 2);
             firstLastCenter[1] = Math.floor(canv.height / 2);
@@ -293,8 +309,8 @@ class SignElement{
             height = symbolType.height;
             Object.assign(img, { width, height });
 
-            canv.width = (width += 2 * padding[0]);
-            canv.height = (height += 2 * padding[1]);
+            canv.width = (width += (padding[0] + padding[2]));
+            canv.height = (height += 2 * (padding[1] + padding[3]));
 
             renderPromise = new Promise((res, rej) => {
                 img.addEventListener("load", () => {
@@ -324,7 +340,7 @@ class SignElement{
     if(!url.searchParams.has("data")) return;
 
     let data = JSON.parse(url.searchParams.get("data"));
-    
+
     const canvas = document.getElementsByTagName("canvas")[0];
 
     // load the "Bitter" font from Google Fonts
