@@ -32,6 +32,10 @@
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"80"}},{"type":"text","properties":{"value":"GÄVLE"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"vagnr","properties":{"value":"272"}},{"type":"text","properties":{"value":"BOLLNÄS"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"FORSBACKA"}}]}]}}}}
     },
     {
+        "name": "F9. Samlingsmärke för vägvisning, Trafikverkets exempel",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"alignContents":"center"},"elements":[{"type":"skylt","properties":{"borderWidth":3,"borderFeatures":{"bottom":"bracket"},"alignContents":"center"},"elements":[{"type":"text","properties":{"value":"PAJALA"}},{"type":"newline"},{"type":"text","properties":{"value":"ÖVERTORNEÅ"}}]},{"type":"newline"},{"type":"text","properties":{"value":"KIRUNA"}}]}}}}
+    },
+    {
         "name": "F10. Platsmärke, Trafikverkets exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\""},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"text","properties":{"value":"NYKÖPING"}}}}}
     },
