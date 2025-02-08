@@ -12,24 +12,40 @@ function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bor
         cx -= signX * borderRadius[i];
         cy -= signY * borderRadius[i];
 
+        if(background != "transparent" && !fillCorners){
+            ctx.beginPath();
+            let ar = borderRadius[i] + lineWidth / 2;
+            ctx.moveTo(cx, cy + signY * ar);
+            ctx.arcTo(cx + signX * ar, cy + signY * ar, cx + signX * ar, cy, ar);
+            ctx.lineTo(cx, cy);
+            ctx.closePath();
+            ctx.fillStyle = background;
+            ctx.fill();
+
+            let m = Math.max(borderRadius[i], borderRadius[(i + 1) % 4]);
+
+            if(signX === signY){
+                ctx.fillRect(
+                    cx, cy + signY * borderRadius[i],
+                    -signX * (outerWidth - 2 * lineWidth - (borderRadius[i] + borderRadius[(i + 1) % 4])), -signY * m
+                );
+            }else{
+                ctx.fillRect(
+                    cx + signX * borderRadius[i], cy,
+                    -signX * m, -signY * (outerHeight - 2 * lineWidth - (borderRadius[i] + borderRadius[(i + 1) % 4]))
+                );
+            }
+        }
+
         ctx.beginPath();
         ctx.moveTo(cx + signX * (lineWidth + borderRadius[i]), cy);
         ctx.arcTo(cx + signX * (lineWidth + borderRadius[i]), cy + signY * (lineWidth + borderRadius[i]), cx, cy + signY * (lineWidth + borderRadius[i]), borderRadius[i] + lineWidth);
         ctx.lineTo(cx, cy + signY * borderRadius[i]);
         ctx.arcTo(cx + signX * borderRadius[i], cy + signY * borderRadius[i], cx + signX * borderRadius[i], cy, borderRadius[i]);
         ctx.closePath();
+
         ctx.fillStyle = color;
         ctx.fill();
-
-        if(background != "transparent" && !fillCorners){
-            ctx.beginPath();
-            ctx.moveTo(cx, cy + signY * borderRadius[i]);
-            ctx.arcTo(cx + signX * borderRadius[i], cy + signY * borderRadius[i], cx + signX * borderRadius[i], cy, borderRadius[i]);
-            ctx.lineTo(cx, cy);
-            ctx.closePath();
-            ctx.fillStyle = background;
-            ctx.fill();
-        }
     };
 
     drawCorner(x0 + lineWidth, y0 + lineWidth, -1, -1, 0);
@@ -39,18 +55,8 @@ function roundedRect(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bor
 
     if(background != "transparent" && !fillCorners){
         ctx.fillStyle = background;
-        // vänster
-        ctx.fillRect(x0 + lineWidth, y0 + lineWidth + borderRadius[0], Math.max(borderRadius[0], borderRadius[3]), outerHeight - 2 * lineWidth - (borderRadius[0] + borderRadius[3]));
 
-        // höger
-        ctx.fillRect(x0 + outerWidth - lineWidth, y0 + lineWidth + borderRadius[1], -Math.max(borderRadius[1], borderRadius[2]), outerHeight - 2 * lineWidth - (borderRadius[1] + borderRadius[2]));
-
-        // ovanför
-        ctx.fillRect(x0 + lineWidth + borderRadius[0], y0 + lineWidth, outerWidth - 2 * lineWidth - (borderRadius[0] + borderRadius[1]), Math.max(borderRadius[0], borderRadius[1]));
-
-        // nedanför
-        ctx.fillRect(x0 + lineWidth + borderRadius[3], y0 + outerHeight - lineWidth, outerWidth - 2 * lineWidth - (borderRadius[2] + borderRadius[3]), -Math.max(borderRadius[2], borderRadius[3]));
-
+        // mitten
         ctx.fillRect(
             x0 + lineWidth + Math.max(borderRadius[0], borderRadius[3]),
             y0 + lineWidth + Math.max(borderRadius[0], borderRadius[1]),
