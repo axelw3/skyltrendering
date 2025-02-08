@@ -113,6 +113,13 @@ const BORDER_FEATURES = {
         "path": new Path2D("M-1,0h1l22,27l22-27h1"),
         "size": [44, 27],
         "fixedSize": true // false om omskalning skall göras (OBS! den resulterande linjebredden påverkas ej) så att kantens längd täcks
+    },
+    "arrow": {
+        "path": new Path2D("M0,-100v100l22,17l22-17v-100v100l-22,25l-22-25z"),
+        "fill": new Path2D("M0,0l22,17l22-17z"),
+        "fillPathMode": true,
+        "size": [44, 27],
+        "fixedSize": false
     }
 };
 
@@ -156,7 +163,7 @@ class SignElement{
         );
 
         Object.entries(properties.borderFeatures).forEach(feature => {
-            let borderFeatureRendered = this.renderBorderFeature(feature[1], feature[0], properties.borderWidth, borderBoxInnerW + bs[0] + bs[2], innerContents.height - bs[1] - bs[3], properties.color, properties.background);
+            let borderFeatureRendered = this.renderBorderFeature(feature[1], feature[0], properties.borderWidth, borderBoxInnerW + 2 * properties.borderWidth, innerContents.height + 2 * properties.borderWidth, properties.color, properties.background);
             let bfp = [x0, y0];
 
             if(feature[0] === "bottom" || feature[0] === "top") bfp[0] += bs[0] + Math.floor((borderBoxInnerW - borderFeatureRendered.width) / 2);
@@ -228,6 +235,8 @@ class SignElement{
             cr, sr, -sr, cr, -a*cr + b*sr, -a*sr - b*cr
         ]));
 
+        const sm = new DOMMatrix([s[2], 0, 0, s[2], 0, 0]);
+
         //ctx.fillStyle="#000";
         //ctx.fillRect(0, 0, canv.width, canv.height);
 
@@ -240,9 +249,20 @@ class SignElement{
         ctx.lineCap = "square";
 
         let path = new Path2D();
-        path.addPath(feature.path, new DOMMatrix([s[2], 0, 0, s[2], 0, 0]));
+        path.addPath(feature.path, sm);
 
-        ctx.fill(path);
+        if(feature.fill !== undefined){
+            let path2 = new Path2D();
+            path2.addPath(feature.fill, sm);
+            ctx.fill(path2);
+
+            if(!!feature.fillPathMode){
+                ctx.fillStyle = color;
+                ctx.fill(path);
+            }
+        }else{
+            ctx.fill(path);
+        }
 
         ctx.strokeStyle = color;
         ctx.stroke(path);
@@ -273,6 +293,18 @@ class SignElement{
             this.properties.padding[1], // ovanför
             this.properties.padding[0], // höger
             this.properties.padding[1]  // nedanför
+        ];
+
+        if(!Array.isArray(this.properties.borderRadius)) this.properties.borderRadius = [
+            this.properties.borderRadius,
+            this.properties.borderRadius
+        ];
+
+        if(this.properties.borderRadius.length != 4) this.properties.borderRadius = [
+            this.properties.borderRadius[0], // vänster
+            this.properties.borderRadius[1], // ovanför
+            this.properties.borderRadius[0], // höger
+            this.properties.borderRadius[1]  // nedanför
         ];
     }
 
@@ -571,7 +603,7 @@ class SignElement{
         //ctx.fillStyle = prop.background;
         //ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, prop.borderRadius, prop.fillCorners, prop.background);
+        roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, [prop.borderRadius, prop.borderRadius, prop.borderRadius, prop.borderRadius], prop.fillCorners, prop.background);
 
         rendered.forEach(res => {
             let x0 = prop.padding + prop.borderWidth + res.x - boundingBox[0],

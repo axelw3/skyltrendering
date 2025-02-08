@@ -8,7 +8,7 @@
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"vagnr","properties":{"value":"26"}},{"type":"vagnr","properties":{"value":"40"}},{"type":"text","properties":{"value":"JÖNKÖPING"}}]}},"right":{"anchor":{"x":"left","y":"middle-first"},"data":{"type":"skylt","properties":{"borderWidth":3,"background":"#097"},"elements":[{"type":"vagnr","properties":{"value":"26","background":"#06a"}},{"type":"text","properties":{"value":"HALMSTAD"}},{"type":"newline"},{"type":"text","properties":{"value":"GISLAVED"}},{"type":"newline"},{"type":"text","properties":{"value":"Sjukhus","font":"\"Tratex\"","color":"black","background":"white"}}]}}}}
     },
     {
-        "name": "F1-1. Orienteringstavla, Trafikverkets exempel",
+        "name": "F1-1. Orienteringstavla, Transportstyrelsens exempel",
         "json": {"type":"junction","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"left","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LINDESBERG"}}]}}}}
     },
     {
@@ -16,11 +16,11 @@
         "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LISTA"}}]}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"E20","background":"#097"}},{"type":"text","properties":{"value":"GÖTEBORG"}},{"type":"newline"},{"type":"vagnr","properties":{"value":"56"}},{"type":"text","properties":{"value":"NORRKÖPING"}}]}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"TUMBO"}}]}}}}
     },
     {
-        "name": "F1-2. Orienteringstavla, Trafikverkets exempel",
+        "name": "F1-2. Orienteringstavla, Transportstyrelsens exempel",
         "json": {"type":"roundabout","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"Tratex\""},"nodes":{"left":{"anchor":{"x":"right","y":"middle"},"data":{"type":"text","properties":{"value":"KUMLA","font":"\"TratexVersal\""}}},"fwd":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"text","properties":{"value":"ÖREBRO","font":"\"TratexVersal\""}}},"right":{"anchor":{"x":"left","y":"middle"},"data":{"type":"text","properties":{"value":"KATRINEHOLM","font":"\"TratexVersal\""}}}}}
     },
     {
-        "name": "F3. Tabellorienteringstavla, Trafikverkets exempel",
+        "name": "F3. Tabellorienteringstavla, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"transparent","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3,"background":"#06a","fillCorners":true},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"80"}}]},{"type":"newline"},{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0,"background":"#06a"},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"vagnr","properties":{"value":"272"}},{"type":"text","properties":{"value":"BOLLNÄS"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"FORSBACKA"}}]},{"type":"skylt","properties":{"borderWidth":3,"alignContents":"center"},"elements":[{"type":"text","properties":{"value":"500 m"}}]}]}]}}}}
     },
     {
@@ -28,23 +28,23 @@
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"text","properties":{"value":"STOCKHOLM"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"GÖTEBORG"}}]}]}}}}
     },
     {
-        "name": "F6. Tabellvägvisare, Trafikverkets exempel",
+        "name": "F6. Tabellvägvisare, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"80"}},{"type":"text","properties":{"value":"GÄVLE"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"vagnr","properties":{"value":"272"}},{"type":"text","properties":{"value":"BOLLNÄS"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"FORSBACKA"}}]}]}}}}
     },
     {
-        "name": "F9. Samlingsmärke för vägvisning, Trafikverkets exempel",
+        "name": "F9. Samlingsmärke för vägvisning, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"alignContents":"center"},"elements":[{"type":"skylt","properties":{"borderWidth":3,"borderFeatures":{"bottom":"bracket"},"alignContents":"center"},"elements":[{"type":"text","properties":{"value":"PAJALA"}},{"type":"newline"},{"type":"text","properties":{"value":"ÖVERTORNEÅ"}}]},{"type":"newline"},{"type":"text","properties":{"value":"KIRUNA"}}]}}}}
     },
     {
-        "name": "F10. Platsmärke, Trafikverkets exempel",
+        "name": "F10. Platsmärke, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\""},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"text","properties":{"value":"NYKÖPING"}}}}}
     },
     {
-        "name": "F12. Vattendrag, Trafikverkets exempel",
+        "name": "F12. Vattendrag, Transportstyrelsens exempel",
         "json": {"type":"water","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"name":{"anchor":{"x":"center","y":"bottom"},"data":{"type":"text","properties":{"value":"DALÄLVEN"}}}}}
     },
     {
-        "name": "F13. Avståndstavla, Trafikverkets exempel",
+        "name": "F13. Avståndstavla, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0},"elements":[{"type":"skylt","elements":[{"type":"text","properties":{"value":"STOCKHOLM"}},{"type":"newline"},{"type":"text","properties":{"value":"SÖDERTÄLJE"}}]},{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"text","properties":{"value":"105"}},{"type":"newline"},{"type":"text","properties":{"value":"71"}}]}]}}}}
     },
     {
@@ -52,7 +52,11 @@
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"alignContents":"center"},"elements":[{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"123"}}]},{"type":"newline"},{"type":"skylt","elements":[{"type":"text","properties":{"value":"STOCKHOLM"}},{"type":"newline"},{"type":"text","properties":{"value":"SÖDERTÄLJE"}}]},{"type":"skylt","properties":{"alignContents":"right"},"elements":[{"type":"text","properties":{"value":"105"}},{"type":"newline"},{"type":"text","properties":{"value":"71"}}]}]}}}}
     },
     {
-        "name": "G3. Radiostation för vägtrafikinformation, Trafikverkets exempel",
+        "name": "G3. Radiostation för vägtrafikinformation, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":3,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":[17,17,17,2],"alignContents":"center"},"elements":[{"type":"skylt","properties":{"alignContents":"center","background":"white","color":"black","padding":12},"elements":[{"type":"text","properties":{"value":"Radio","font":"\"Tratex\""}},{"type":"newline"},{"type":"text","properties":{"value":"FM4"}}]},{"type":"newline"},{"type":"text","properties":{"value":"98,7"}}]}}}}
+    },
+    {
+        "name": "J2. Upplysningsmärke, Transportstyrelsens exempel",
+        "json": {"type":"plain","properties":{"background":"#ffd908","color":"black","borderWidth":4,"font":"\"TratexVersal\"","padding":2},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"alignContents":"center","lineSpacing":0},"elements":[{"type":"text","properties":{"value":"VÄGSALTNING"}},{"type":"newline"},{"type":"text","properties":{"value":"UPPHÖR"}}]}}}}
     }
 ]
