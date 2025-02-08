@@ -43,7 +43,7 @@ const DEFAULT_PROPERTIES = {
     },
     "newline": {},
     "symbol": {
-        "padding": 6,
+        "padding": 5,
         "type": "arrow-small"
     }
 };
@@ -97,6 +97,11 @@ const SYMBOLER = {
         "width": 48,
         "height": 48,
         "default": "left"
+    },
+    "exit": {
+        "width": 46,
+        "height": 26,
+        "default": ""
     }
 };
 
@@ -123,21 +128,27 @@ const BORDER_FEATURES = {
     }
 };
 
+function to4EForm(data){
+    if(!Array.isArray(data)) data = [ data, data ];
+    if(data.length != 4) data = [ data[0], data[1], data[0], data[1] ];
+    return data;
+}
+
 class SignElement{
     static borderSize(innerWidth, innerHeight, properties){
-        let bs = [ properties.borderWidth, properties.borderWidth, properties.borderWidth, properties.borderWidth ];
+        let bs = Array.from(properties.borderWidth);
 
         if(properties.borderFeatures["left"] !== undefined)
-            bs[0] = SignElement.borderFeatureSize(properties.borderFeatures["left"], properties.borderWidth, innerHeight + 2 * properties.borderWidth)[1];
+            bs[0] = SignElement.borderFeatureSize(properties.borderFeatures["left"], properties.borderWidth[0], innerHeight + properties.borderWidth[1] + properties.borderWidth[3])[1];
 
         if(properties.borderFeatures["right"] !== undefined)
-            bs[2] = SignElement.borderFeatureSize(properties.borderFeatures["right"], properties.borderWidth, innerHeight + 2 * properties.borderWidth)[1];
+            bs[2] = SignElement.borderFeatureSize(properties.borderFeatures["right"], properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3])[1];
 
         if(properties.borderFeatures["top"] !== undefined)
-            bs[1] = SignElement.borderFeatureSize(properties.borderFeatures["top"], properties.borderWidth, innerWidth + 2 * properties.borderWidth)[1];
+            bs[1] = SignElement.borderFeatureSize(properties.borderFeatures["top"], properties.borderWidth[1], innerWidth + properties.borderWidth[0] + properties.borderWidth[2])[1];
 
         if(properties.borderFeatures["bottom"] !== undefined)
-            bs[3] = SignElement.borderFeatureSize(properties.borderFeatures["bottom"], properties.borderWidth, innerWidth + 2 * properties.borderWidth)[1];
+            bs[3] = SignElement.borderFeatureSize(properties.borderFeatures["bottom"], properties.borderWidth[3], innerWidth + properties.borderWidth[0] + properties.borderWidth[2])[1];
 
         return bs;
     }
@@ -145,15 +156,14 @@ class SignElement{
     static drawWithBorder(ctx, x0, y0, innerContents, properties, dx, dy, borderBoxInnerW){
         let bs = SignElement.borderSize(innerContents.width, innerContents.height, properties);
 
-        roundedRect(
+        roundedFill(
             ctx,
-            x0 + bs[0] - properties.borderWidth, y0 + bs[1] - properties.borderWidth,
-            borderBoxInnerW + 2 * properties.borderWidth, innerContents.height + 2 * properties.borderWidth,
+            x0 + bs[0] - properties.borderWidth[0], y0 + bs[1] - properties.borderWidth[1],
+            borderBoxInnerW + properties.borderWidth[0] + properties.borderWidth[2], innerContents.height + properties.borderWidth[1] + properties.borderWidth[3],
             properties.borderWidth,
-            properties.color,
             properties.borderRadius,
-            !!properties.fillCorners,
-            properties.background
+            properties.background,
+            !!properties.fillCorners
         );
 
         ctx.drawImage(
@@ -162,8 +172,17 @@ class SignElement{
             y0 + dy + bs[1]
         );
 
+        roundedFrame(
+            ctx,
+            x0 + bs[0] - properties.borderWidth[0], y0 + bs[1] - properties.borderWidth[1],
+            borderBoxInnerW + properties.borderWidth[0] + properties.borderWidth[2], innerContents.height + properties.borderWidth[1] + properties.borderWidth[3],
+            properties.borderWidth,
+            properties.color,
+            properties.borderRadius
+        );
+
         Object.entries(properties.borderFeatures).forEach(feature => {
-            let borderFeatureRendered = this.renderBorderFeature(feature[1], feature[0], properties.borderWidth, borderBoxInnerW + 2 * properties.borderWidth, innerContents.height + 2 * properties.borderWidth, properties.color, properties.background);
+            let borderFeatureRendered = this.renderBorderFeature(feature[1], feature[0], properties.borderWidth, borderBoxInnerW + properties.borderWidth[0] + properties.borderWidth[2], innerContents.height + properties.borderWidth[1] + properties.borderWidth[3], properties.color, properties.background);
             let bfp = [x0, y0];
 
             if(feature[0] === "bottom" || feature[0] === "top") bfp[0] += bs[0] + Math.floor((borderBoxInnerW - borderFeatureRendered.width) / 2);
@@ -194,26 +213,28 @@ class SignElement{
         }
     }
 
-    static borderFeatureSize(featureName, borderWidth, sideLength){
+    static borderFeatureSize(featureName, bw, sideLength){
         let w = BORDER_FEATURES[featureName].size[0],
             h = BORDER_FEATURES[featureName].size[1];
 
         let sf = 1;
 
         if(!BORDER_FEATURES[featureName].fixedSize){
-            h = Math.floor((h * (sideLength - borderWidth)) / w);
-            w = sideLength - borderWidth;
-            sf = h / BORDER_FEATURES[featureName].size[1];
+            sf = (sideLength - bw) / w;
+            h = Math.floor(h * sf);
+            w = sideLength - bw;
         }
 
-        return [w + borderWidth, h + borderWidth, sf];
+        return [w + bw, h + bw, sf];
     }
 
     static renderBorderFeature(featureName, side, borderWidth, outerWidth, outerHeight, color, background){
         let lr = (side === "left" || side === "right");
 
+        let bw = borderWidth[lr ? (side === "left" ? 0 : 2) : (side === "top" ? 1 : 3)];
+
         let sideLength = lr ? outerHeight : outerWidth;
-        let s = SignElement.borderFeatureSize(featureName, borderWidth, sideLength);
+        let s = SignElement.borderFeatureSize(featureName, bw, sideLength);
 
         let feature = BORDER_FEATURES[featureName];
 
@@ -227,7 +248,7 @@ class SignElement{
         // bottom:  cos 1   sin 0
 
         let sr = lr ? (side === "left" ? 1 : (-1)) : 0, cr = lr ? 0 : (side === "top" ? (-1) : 1);
-        let [a, b] = [(s[0] - borderWidth) / 2, (s[1] - borderWidth) / 2];
+        let [a, b] = [(s[0] - bw) / 2, (s[1] - bw) / 2];
 
         let ctx = canv.getContext("2d");
 
@@ -243,9 +264,9 @@ class SignElement{
         ctx.transform(tm.a, tm.b, tm.c, tm.d, tm.e, tm.f);
 
         ctx.fillStyle = background;
-        ctx.fillRect(0, -borderWidth/2, s[0], borderWidth);
+        ctx.fillRect(0, -bw/2, s[0], bw);
 
-        ctx.lineWidth = borderWidth;
+        ctx.lineWidth = bw;
         ctx.lineCap = "square";
 
         let path = new Path2D();
@@ -283,29 +304,9 @@ class SignElement{
         this.properties = Object.assign({}, GLOBAL_DEFAULTS, DEFAULT_PROPERTIES[data.type], prop);
         this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
 
-        if(!Array.isArray(this.properties.padding)) this.properties.padding = [
-            this.properties.padding,
-            this.properties.padding
-        ];
-
-        if(this.properties.padding.length != 4) this.properties.padding = [
-            this.properties.padding[0], // vänster
-            this.properties.padding[1], // ovanför
-            this.properties.padding[0], // höger
-            this.properties.padding[1]  // nedanför
-        ];
-
-        if(!Array.isArray(this.properties.borderRadius)) this.properties.borderRadius = [
-            this.properties.borderRadius,
-            this.properties.borderRadius
-        ];
-
-        if(this.properties.borderRadius.length != 4) this.properties.borderRadius = [
-            this.properties.borderRadius[0], // övre vänstra
-            this.properties.borderRadius[1], // övre högra
-            this.properties.borderRadius[0], // nedre högra
-            this.properties.borderRadius[1]  // nedre vänstra
-        ];
+        this.properties.padding = to4EForm(this.properties.padding);
+        this.properties.borderRadius = to4EForm(this.properties.borderRadius);
+        this.properties.borderWidth = to4EForm(this.properties.borderWidth);
 
         // tag bort rundade hörn på sidor med hela kantutsmyckningar
         let bfs = ["left", "top", "right", "bottom"].map(s => {
@@ -440,15 +441,13 @@ class SignElement{
                 if(this.properties.dashedInset){
                     let bw = this.properties.borderWidth;
 
-                    roundedRect(
+                    roundedFrame(
                         ctx,
-                        bw, bw,
-                        canv.width - 2 * bw, canv.height - 2 * bw,
+                        bw[0], bw[1],
+                        canv.width - bw[0] - bw[2], canv.height - bw[1] - bw[3],
                         bw,
                         this.properties.color,
                         this.properties.borderRadius,
-                        false,
-                        "transparent",
                         [10, 10]
                     );
                 }
@@ -610,10 +609,10 @@ class SignElement{
         canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
         canvas.height = 2 * prop.borderWidth + (boundingBox[3] - boundingBox[2]) + 2 * prop.padding;
 
-        //ctx.fillStyle = prop.background;
-        //ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = prop.background;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        roundedRect(ctx, 0, 0, canvas.width, canvas.height, prop.borderWidth, prop.color, [prop.borderRadius, prop.borderRadius, prop.borderRadius, prop.borderRadius], prop.fillCorners, prop.background);
+        roundedFrame(ctx, 0, 0, canvas.width, canvas.height, [ prop.borderWidth, prop.borderWidth, prop.borderWidth, prop.borderWidth ], prop.color, [prop.borderRadius, prop.borderRadius, prop.borderRadius, prop.borderRadius]);
 
         rendered.forEach(res => {
             let x0 = prop.padding + prop.borderWidth + res.x - boundingBox[0],

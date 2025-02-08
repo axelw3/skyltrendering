@@ -28,12 +28,24 @@
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"borderWidth":3,"borderRadius":4,"borderFeatures":{"right":"arrow"}},"elements":[{"type":"text","properties":{"value":"NYKÖPING"}},{"type":"text","properties":{"value":"23","padding":[12,0,0,0]}}]}}}}
     },
     {
+        "name": "F5. Vägvisare, exempel med vägnummer",
+        "json": {"type":"plain","properties":{"background":"#097","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"borderWidth":3,"borderRadius":4,"borderFeatures":{"right":"arrow"},"padding":0},"elements":[{"type":"text","properties":{"value":"73","borderRadius":0,"borderWidth":[0,0,3,0],"padding":5,"background":"#06a"}},{"type":"text","properties":{"value":"STOCKHOLM"}}]}}}}
+    },
+    {
         "name": "F6. Tabellvägvisare, enkelt exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"text","properties":{"value":"STOCKHOLM"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"GÖTEBORG"}}]}]}}}}
     },
     {
         "name": "F6. Tabellvägvisare, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"80"}},{"type":"text","properties":{"value":"GÄVLE"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"vagnr","properties":{"value":"272"}},{"type":"text","properties":{"value":"BOLLNÄS"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"FORSBACKA"}}]}]}}}}
+    },
+    {
+        "name": "F8. Körfältsvägvisare, Transportstyrelsens exempel 1/2",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"text","properties":{"value":"BODA"}}]}}}}
+    },
+    {
+        "name": "F8. Körfältsvägvisare, Transportstyrelsens exempel 2/2",
+        "json": {"type":"plain","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\"","padding":4},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}}}}
     },
     {
         "name": "F9. Samlingsmärke för vägvisning, Transportstyrelsens exempel",
@@ -62,6 +74,10 @@
     {
         "name": "F15. Omledning, Transportstyrelsens exempel",
         "json": {"type":"plain","properties":{"background":"white","color":"#06a","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"vagnr","properties":{"value":"58"}}}}}
+    },
+    {
+        "name": "F27. Trafikplatsnummer, Transportstyrelsens exempel",
+        "json": {"type":"plain","properties":{"background":"#aaa","color":"black","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"background":"#fd1","padding":[5,0],"borderWidth":4,"borderRadius":18},"elements":[{"type":"symbol","properties":{"type":"exit"}},{"type":"text","properties":{"value":"75"}}]}}}}
     },
     {
         "name": "G3. Radiostation för vägtrafikinformation, Transportstyrelsens exempel",
