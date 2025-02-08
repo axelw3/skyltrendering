@@ -48,6 +48,30 @@ const DEFAULT_PROPERTIES = {
     }
 };
 
+const TEMPLATES = {
+    "avfart": (no = "1") => ({
+        "type": "skylt",
+        "properties": {
+            "background": "#ffd908",
+            "borderWidth": 4,
+            "borderRadius": 18,
+            "padding": [4, 0]
+        },
+        "elements": [
+            {
+                "type": "symbol",
+                "properties": { "type": "exit" }
+            },
+            {
+                "type": "text",
+                "properties": {
+                    "value": no
+                }
+            }
+        ]
+    })
+};
+
 const SKYLT_ELEMENT_SPACING_X = 8;
 
 const SKYLTTYPER = {
@@ -292,6 +316,18 @@ class SignElement{
     }
 
     constructor(data, parentProperties){
+        while(data.type.startsWith("#")){
+            let templateName = data.type.slice(1);
+            if(!TEMPLATES[templateName]){
+                alert("ERROR: Unknown template \"" + templateName + "\".")
+                break;
+            }
+
+            let template = TEMPLATES[templateName](...(data.params || []));
+            Object.assign(template.properties, data.properties);
+            data = template;
+        }
+
         this.type = data.type;
 
         let prop = data.properties || {};

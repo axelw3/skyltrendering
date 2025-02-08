@@ -77,7 +77,7 @@
     },
     {
         "name": "F27. Trafikplatsnummer, Transportstyrelsens exempel",
-        "json": {"type":"plain","properties":{"background":"#aaa","color":"black","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"skylt","properties":{"background":"#fd1","padding":[5,0],"borderWidth":4,"borderRadius":18},"elements":[{"type":"symbol","properties":{"type":"exit"}},{"type":"text","properties":{"value":"75"}}]}}}}
+        "json": {"type":"plain","properties":{"background":"#aaa","color":"black","borderWidth":0,"font":"\"TratexVersal\"","padding":0},"nodes":{"default":{"anchor":{"x":"left","y":"top"},"data":{"type":"#avfart","params":["75"]}}}}
     },
     {
         "name": "G3. Radiostation för vägtrafikinformation, Transportstyrelsens exempel",
