@@ -128,16 +128,16 @@ class SignElement{
         let bs = [ properties.borderWidth, properties.borderWidth, properties.borderWidth, properties.borderWidth ];
 
         if(properties.borderFeatures["left"] !== undefined)
-            bs[0] = SignElement.borderFeatureSize(properties.borderFeatures["left"], properties.borderWidth, innerHeight)[1];
+            bs[0] = SignElement.borderFeatureSize(properties.borderFeatures["left"], properties.borderWidth, innerHeight + 2 * properties.borderWidth)[1];
 
         if(properties.borderFeatures["right"] !== undefined)
-            bs[2] = SignElement.borderFeatureSize(properties.borderFeatures["right"], properties.borderWidth, innerHeight)[1];
+            bs[2] = SignElement.borderFeatureSize(properties.borderFeatures["right"], properties.borderWidth, innerHeight + 2 * properties.borderWidth)[1];
 
         if(properties.borderFeatures["top"] !== undefined)
-            bs[1] = SignElement.borderFeatureSize(properties.borderFeatures["top"], properties.borderWidth, innerWidth)[1];
+            bs[1] = SignElement.borderFeatureSize(properties.borderFeatures["top"], properties.borderWidth, innerWidth + 2 * properties.borderWidth)[1];
 
         if(properties.borderFeatures["bottom"] !== undefined)
-            bs[3] = SignElement.borderFeatureSize(properties.borderFeatures["bottom"], properties.borderWidth, innerWidth)[1];
+            bs[3] = SignElement.borderFeatureSize(properties.borderFeatures["bottom"], properties.borderWidth, innerWidth + 2 * properties.borderWidth)[1];
 
         return bs;
     }
@@ -201,9 +201,9 @@ class SignElement{
         let sf = 1;
 
         if(!BORDER_FEATURES[featureName].fixedSize){
-            sf = (sideLength - borderWidth) / w;
-            h *= sf;
-            w = (sideLength - borderWidth);
+            h = Math.floor((h * (sideLength - borderWidth)) / w);
+            w = sideLength - borderWidth;
+            sf = h / BORDER_FEATURES[featureName].size[1];
         }
 
         return [w + borderWidth, h + borderWidth, sf];
@@ -301,11 +301,21 @@ class SignElement{
         ];
 
         if(this.properties.borderRadius.length != 4) this.properties.borderRadius = [
-            this.properties.borderRadius[0], // vänster
-            this.properties.borderRadius[1], // ovanför
-            this.properties.borderRadius[0], // höger
-            this.properties.borderRadius[1]  // nedanför
+            this.properties.borderRadius[0], // övre vänstra
+            this.properties.borderRadius[1], // övre högra
+            this.properties.borderRadius[0], // nedre högra
+            this.properties.borderRadius[1]  // nedre vänstra
         ];
+
+        // tag bort rundade hörn på sidor med hela kantutsmyckningar
+        let bfs = ["left", "top", "right", "bottom"].map(s => {
+            let bf = this.properties.borderFeatures[s];
+            return bf !== undefined && !BORDER_FEATURES[bf].fixedSize; // !fixedSize => hel, täcker hela kantens längd
+        });
+
+        for(let i = 0; i < 4; i++){
+            if(bfs[i] || bfs[(i + 1) % 4]) this.properties.borderRadius[i] = 0;
+        }
     }
 
     render(){
