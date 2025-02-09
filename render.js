@@ -1,8 +1,11 @@
+(function(){
+
 // Priority:
 // 1. Specified value
 // 2. Value from parent (if property is inherited)
-// 3. Default value (from DEFAULT_PROPERTIES or DEFAULTS)
-// 4. Global defaults (GLOBAL_DEFAULTS)
+// 3. Default value (from DEFAULT_PROPERTIES)
+// 4. DEFAULTS (if root)
+// 5. Global defaults (GLOBAL_DEFAULTS)
 
 const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight", "lineSpacing"]; // properties that can be inherited
 
@@ -13,23 +16,24 @@ const GLOBAL_DEFAULTS = {
 };
 
 const DEFAULTS = { // defaults (applied only to the root tag)
-    "background": "navy",
+    "background": "#06a",
     "color": "white",
-    "borderWidth": 4,
     "borderRadius": 4,
     "font": "sans-serif",
-    "padding": 8,
     "lineHeight": 46,
     "fillCorners": true
 };
 
 const DEFAULT_PROPERTIES = {
+    ".": {
+        "borderWidth": 4,
+        "padding": 8
+    },
     "skylt": {
         "padding": 6,
         "lineSpacing": 4,
         "blockDisplay": false,
         "anchorForwarded": false,
-        "fillCorners": false,
         "alignContentsV": "middle",
         "alignContents": "left"
     },
@@ -94,14 +98,6 @@ const TEMPLATES = {
 const SKYLT_ELEMENT_SPACING_X = 8;
 
 const SKYLTTYPER = {
-    "plain": {
-        "width": 0,
-        "height": 0,
-        "core": [0, 0, 0, 0],
-        "nodes": {
-            "default": { "x": [0, 0], "y": [0, 0] }
-        }
-    },
     "junction": {
         "width": 120,
         "height": 240,
@@ -110,9 +106,9 @@ const SKYLTTYPER = {
         "core": [.4, .6, .15, .36], // [leftX, rightX, topY, bottomY]
 
         "nodes": {
-            "fwd": { "x": [.2, .8], "y": [0, 0]},
-            "right": { "x": [1, 1], "y": [.25, .25] },
-            "left": { "x": [0, 0], "y": [.25, .25] }
+            "fwd": { "x": [.2, .8], "y": [0, 0], "ay": "bottom" },
+            "right": { "x": [1, 1], "y": [.25, .25], "ax": "left" },
+            "left": { "x": [0, 0], "y": [.25, .25], "ax": "right" }
         }
     },
     "roundabout": {
@@ -120,9 +116,9 @@ const SKYLTTYPER = {
         "height": 480,
         "core": [.35, .75, .09, .35],
         "nodes": {
-            "fwd": { "x": [.5, .5], "y": [.03, .03] },
-            "right": { "x": [.9, .9], "y": [.21, .21] },
-            "left": { "x": [.1, .1], "y": [.21, .21] }
+            "fwd": { "x": [.5, .5], "y": [.03, .03], "ay": "bottom" },
+            "right": { "x": [.9, .9], "y": [.21, .21], "ax": "left" },
+            "left": { "x": [.1, .1], "y": [.21, .21], "ax": "right" }
         }
     },
     "water": {
@@ -130,7 +126,7 @@ const SKYLTTYPER = {
         "height": 19,
         "core": [0, 1, 0, 1],
         "nodes": {
-            "name": { "x": [.5, .5], "y": [-.1, -.1] }
+            "name": { "x": [.5, .5], "y": [-.1, -.1], "ax": "center", "ay": "bottom" }
         }
     }
 };
@@ -202,11 +198,12 @@ class SignElement{
 
         roundedFill(
             ctx,
-            x0 + bs[0] - properties.borderWidth[0], y0 + bs[1] - properties.borderWidth[1],
-            borderBoxInnerW + properties.borderWidth[0] + properties.borderWidth[2], innerContents.height + properties.borderWidth[1] + properties.borderWidth[3],
+            x0 + bs[0], y0 + bs[1],
+            borderBoxInnerW, innerContents.height,
             properties.borderWidth,
             properties.borderRadius,
             properties.background,
+            bs,
             !!properties.fillCorners
         );
 
@@ -352,13 +349,23 @@ class SignElement{
 
         let prop = data.properties || {};
 
-        INHERITED.forEach(key => {
-            if(prop[key] !== undefined || parentProperties[key] === undefined) return;
-            prop[key] = parentProperties[key];
-        });
+        this.properties = Object.assign({}, GLOBAL_DEFAULTS);
 
-        this.properties = Object.assign({}, GLOBAL_DEFAULTS, DEFAULT_PROPERTIES[data.type], prop);
+        if(parentProperties === null){
+            Object.assign(this.properties, DEFAULTS);
+        }else{
+            INHERITED.forEach(key => {
+                if(prop[key] !== undefined || parentProperties[key] === undefined) return;
+                prop[key] = parentProperties[key];
+            });
+        }
+
+        Object.assign(this.properties, DEFAULT_PROPERTIES[data.type.startsWith(".") ? "." : data.type], prop);
+
         this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
+
+        this.nodes = (data.nodes || {});
+        Object.keys(this.nodes).forEach(key => this.nodes[key].signelement = new SignElement(this.nodes[key].data, this.properties));
 
         this.properties.padding = to4EForm(this.properties.padding);
         this.properties.borderRadius = to4EForm(this.properties.borderRadius);
@@ -565,6 +572,145 @@ class SignElement{
         }else if(this.type == "newline"){
             width = 0;
             height = 0;
+        }else if(this.type.startsWith(".")){
+            let t = SKYLTTYPER[this.type.slice(1)];
+            let keys = Object.keys(t.nodes).sort().filter(nodeName => !!this.nodes[nodeName]);
+
+            let svg = document.createElement("img");
+            svg.width = t.width;
+            svg.height = t.height;
+
+            let svgBox = Array.from(t.core);
+            keys.forEach(nodeName => {
+                svgBox[0] = Math.min(svgBox[0], t.nodes[nodeName].x[0]);
+                svgBox[1] = Math.max(svgBox[1], t.nodes[nodeName].x[1]);
+                svgBox[2] = Math.min(svgBox[2], t.nodes[nodeName].y[0]);
+                svgBox[3] = Math.max(svgBox[3], t.nodes[nodeName].y[1]);
+            });
+
+            let boundingBox = [
+                svgBox[0] * t.width,
+                svgBox[1] * t.width,
+                svgBox[2] * t.height,
+                svgBox[3] * t.height
+            ];
+
+            // fonts and svg loaded successfully
+            let r = keys.map(nodeName => {
+                let n = this.nodes[nodeName];
+                let s = n.signelement;
+
+                let tn = t.nodes[nodeName];
+
+                n.anchor = Object.assign({ "x": tn.ax, "y": tn.ay }, n.anchor);
+
+                let result = s.render();
+                let bs = SignElement.borderSize(result.w, result.h, s.properties);
+
+                let rse = [ result.w + bs[0] + bs[2], result.h + bs[1] + bs[3] ];
+
+                let leftX = tn.x.map(x => x * t.width).map(Math.floor), topY = tn.y.map(y => y * t.height).map(Math.floor);
+
+                switch(n.anchor.x){
+                    case "right":
+                        leftX = leftX[1] - rse[0];
+                        break;
+                    case "center":
+                        leftX = Math.floor((leftX[0] + leftX[1]) / 2 - Math.floor(rse[0] / 2));
+                        break;
+                    case "center-first":
+                        leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[0];
+                        break;
+                    case "center-last":
+                        leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[2];
+                        break;
+                    default:
+                        leftX = leftX[0];
+                }
+
+                switch(n.anchor.y){
+                    case "bottom":
+                        topY = topY[1] - rse[1];
+                        break;
+                    case "middle":
+                        topY = Math.floor((topY[0] + topY[1]) / 2) - Math.floor(rse[1] / 2);
+                        break;
+                    case "middle-first":
+                        topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[1] - bs[1];
+                        break;
+                    case "middle-last":
+                        topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[3] - bs[1];
+                        break;
+                    default:
+                        topY = topY[0];
+                }
+
+                boundingBox = [
+                    Math.min(boundingBox[0], leftX),
+                    Math.max(boundingBox[1], leftX + rse[0]),
+                    Math.min(boundingBox[2], topY),
+                    Math.max(boundingBox[3], topY + rse[1])
+                ];
+
+                return { renderPromise: result, x: leftX, y: topY, p: s.properties };
+            });
+
+            width = boundingBox[1] - boundingBox[0];
+            height = boundingBox[3] - boundingBox[2];
+
+            canv.width = (boundingBox[1] - boundingBox[0]) + this.properties.padding[0] + this.properties.padding[2];
+            canv.height = (boundingBox[3] - boundingBox[2]) + this.properties.padding[1] + this.properties.padding[3];
+
+            renderPromise = _ => Promise.all(r.map(res => {
+                let x0 = this.properties.padding[0] + res.x - boundingBox[0],
+                    y0 = this.properties.padding[1] + res.y - boundingBox[2];
+
+                return res.renderPromise.doRender().then(rendered => {
+                    SignElement.drawWithBorder(
+                        ctx,
+                        x0, y0,
+                        rendered,
+                        res.p,
+                        0, 0,
+                        rendered.width
+                    );
+                });
+            })).then(() => {
+                if(t.width == 0 || t.height == 0) return canv;
+
+                svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
+                svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));
+                svgBox[2] = Math.min(1, Math.max(0, boundingBox[2] / t.height));
+                svgBox[3] = Math.max(0, Math.min(1, boundingBox[3] / t.height));
+
+                let crop = [
+                    svgBox[0] * t.width,
+                    svgBox[2] * t.height,
+                    (svgBox[1] - svgBox[0]) * t.width,
+                    (svgBox[3] - svgBox[2]) * t.height
+                ]; // [x0, y0, w, h]
+
+                return new Promise((resolve, reject) => {
+                    svg.onload = resolve;
+                    svg.onerror = reject;
+                    svg.src = "svg/" + this.type.slice(1) + ".svg#" + keys.join("_");
+                }).then(() => {
+                    let svgRasterized = document.createElement("canvas");
+                    Object.assign(svgRasterized, { width: t.width, height: t.height });
+                    svgRasterized.getContext("2d").drawImage(svg, 0, 0, t.width, t.height);
+
+                    ctx.drawImage(
+                        svgRasterized,
+                        crop[0], crop[1], // sx, sy
+                        crop[2], crop[3], // sw, sh
+                        this.properties.padding[0] - boundingBox[0] + crop[0], // dx
+                        this.properties.padding[1] - boundingBox[2] + crop[1], // dy
+                        crop[2], crop[3] // dw, dh
+                    );
+
+                    return canv;
+                });
+            });
         }else{
             alert("Fel!");
         }
@@ -573,175 +719,38 @@ class SignElement{
     }
 }
 
-(function(){
+const canvas = document.getElementsByTagName("canvas")[0];
+const ctx = canvas.getContext("2d");
+
+const tratex = new FontFace(
+    "Tratex",
+    "url(TratexSvart-Regular.otf)",
+);
+
+const tratexVersal = new FontFace(
+    "TratexVersal",
+    "url(TRATEXPOSVERSAL-POSVERSAL.otf)",
+);
+
+document.fonts.add(tratex);
+document.fonts.add(tratexVersal);
+
+Promise.all([tratex.load(), tratexVersal.load()]).then(() => {
     let url = new URL(window.location.href);
     if(!url.searchParams.has("data")) return;
 
     let data = JSON.parse(url.searchParams.get("data"));
 
-    const canvas = document.getElementsByTagName("canvas")[0];
+    let sign = new SignElement(data, null);
+    let r = sign.render();
 
-    // load the "Bitter" font from Google Fonts
-    const tratex = new FontFace(
-        "Tratex",
-        "url(TratexSvart-Regular.otf)",
-    );
+    r.doRender().then(canv => {
+        let borderSize = SignElement.borderSize(canv.width, canv.height, sign.properties);
 
-    const tratexVersal = new FontFace(
-        "TratexVersal",
-        "url(TRATEXPOSVERSAL-POSVERSAL.otf)",
-    );
+        Object.assign(canvas, { width: r.w + borderSize[0] + borderSize[2], height: r.h + borderSize[1] + borderSize[3] });
 
-    document.fonts.add(tratex);
-    document.fonts.add(tratexVersal);
-
-    const ctx = canvas.getContext("2d");
-    let t = SKYLTTYPER[data.type];
-    let keys = Object.keys(t.nodes).sort().filter(nodeName => !!data.nodes[nodeName]);
-    let prop = Object.assign({}, GLOBAL_DEFAULTS, DEFAULTS, data.properties);
-
-    let svg = document.createElement("img");
-    svg.width = t.width;
-    svg.height = t.height;
-
-    let svgBox = Array.from(t.core);
-    keys.forEach(nodeName => {
-        svgBox[0] = Math.min(svgBox[0], t.nodes[nodeName].x[0]);
-        svgBox[1] = Math.max(svgBox[1], t.nodes[nodeName].x[1]);
-        svgBox[2] = Math.min(svgBox[2], t.nodes[nodeName].y[0]);
-        svgBox[3] = Math.max(svgBox[3], t.nodes[nodeName].y[1]);
+        SignElement.drawWithBorder(ctx, 0, 0, canv, sign.properties, 0, 0, canv.width);
     });
+});
 
-    let boundingBox = [
-        svgBox[0] * t.width,
-        svgBox[1] * t.width,
-        svgBox[2] * t.height,
-        svgBox[3] * t.height
-    ];
-
-    Promise.all([new Promise((resolve, reject) => {
-        svg.src = "svg/" + data.type + ".svg#" + keys.join("_");
-        svg.onload = resolve;
-        svg.onerror = reject;
-    }), tratex.load(), tratexVersal.load()]).then(() => {
-        let svgRasterized = document.createElement("canvas");
-        Object.assign(svgRasterized, { width: t.width, height: t.height });
-        svgRasterized.getContext("2d").drawImage(svg, 0, 0, t.width, t.height);
-
-        // fonts and svg loaded successfully
-        let rendered = keys.map(nodeName => {
-            let n = data.nodes[nodeName];
-            let s = new SignElement(n.data, prop);
-
-            if(n.anchor === undefined) n.anchor = { "x": "left", "y": "top" };
-
-            let result = s.render();
-            let bs = SignElement.borderSize(result.w, result.h, s.properties);
-
-            let rse = [ result.w + bs[0] + bs[2], result.h + bs[1] + bs[3] ];
-
-            let leftX = t.nodes[nodeName].x.map(x => x * t.width).map(Math.floor), topY = t.nodes[nodeName].y.map(y => y * t.height).map(Math.floor);
-
-            switch(n.anchor.x){
-                case "right":
-                    leftX = leftX[1] - rse[0];
-                    break;
-                case "center":
-                    leftX = Math.floor((leftX[0] + leftX[1]) / 2 - Math.floor(rse[0] / 2));
-                    break;
-                case "center-first":
-                    leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[0];
-                    break;
-                case "center-last":
-                    leftX = Math.floor((leftX[0] + leftX[1]) / 2) - result.flc[2];
-                    break;
-                default:
-                    leftX = leftX[0];
-            }
-
-            switch(n.anchor.y){
-                case "bottom":
-                    topY = topY[1] - rse[1];
-                    break;
-                case "middle":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - Math.floor(rse[1] / 2);
-                    break;
-                case "middle-first":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[1] - bs[1];
-                    break;
-                case "middle-last":
-                    topY = Math.floor((topY[0] + topY[1]) / 2) - result.flc[3] - bs[1];
-                    break;
-                default:
-                    topY = topY[0];
-            }
-
-            boundingBox = [
-                Math.min(boundingBox[0], leftX),
-                Math.max(boundingBox[1], leftX + rse[0]),
-                Math.min(boundingBox[2], topY),
-                Math.max(boundingBox[3], topY + rse[1])
-            ];
-
-            return { renderPromise: result.doRender(), x: leftX, y: topY, p: s.properties };
-        });
-
-        canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
-        canvas.height = 2 * prop.borderWidth + (boundingBox[3] - boundingBox[2]) + 2 * prop.padding;
-
-        ctx.fillStyle = prop.background;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        roundedFrame(ctx, 0, 0, canvas.width, canvas.height, [ prop.borderWidth, prop.borderWidth, prop.borderWidth, prop.borderWidth ], prop.color, [prop.borderRadius, prop.borderRadius, prop.borderRadius, prop.borderRadius]);
-
-        rendered.forEach(res => {
-            let x0 = prop.padding + prop.borderWidth + res.x - boundingBox[0],
-                y0 = prop.padding + prop.borderWidth + res.y - boundingBox[2];
-
-            res.renderPromise.then(rendered => {
-                SignElement.drawWithBorder(
-                    ctx,
-                    x0, y0,
-                    rendered,
-                    res.p,
-                    0, 0,
-                    rendered.width
-                );
-            });
-        });
-
-        if(t.width == 0 || t.height == 0) return;
-
-        svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
-        svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));
-        svgBox[2] = Math.min(1, Math.max(0, boundingBox[2] / t.height));
-        svgBox[3] = Math.max(0, Math.min(1, boundingBox[3] / t.height));
-
-        /*ctx.fillStyle = "black";
-        ctx.fillRect(
-            prop.padding + prop.borderWidth - boundingBox[0] + svgBox[0] * t.width,
-            prop.padding + prop.borderWidth - boundingBox[2] + svgBox[2] * t.height,
-            (svgBox[1] - svgBox[0]) * t.width,
-            (svgBox[3] - svgBox[2]) * t.height
-        );*/
-
-        let crop = [
-            svgBox[0] * t.width,
-            svgBox[2] * t.height,
-            (svgBox[1] - svgBox[0]) * t.width,
-            (svgBox[3] - svgBox[2]) * t.height
-        ]; // [x0, y0, w, h]
-
-        ctx.drawImage(
-            svgRasterized,
-            crop[0], crop[1], // sx, sy
-            crop[2], crop[3], // sw, sh
-            prop.padding + prop.borderWidth - boundingBox[0] + crop[0], // dx
-            prop.padding + prop.borderWidth - boundingBox[2] + crop[1], // dy
-            crop[2], crop[3] // dw, dh
-        );
-    }, (err) => {
-        console.error(err);
-    },
-    );
 })();

@@ -4,9 +4,29 @@
         <title>Skyltprogram (rendering)</title>
         <meta charset="UTF-8">
     </head>
-    <body>
+    <body style="background: #aaa;">
         <canvas></canvas>
         <script src="graphics.js"></script>
-        <script src="render.js"></script>
+        <script>
+(async function(){
+    const PREVIOUS_VERSION_URL = v => "https://cdn.jsdelivr.net/gh/axelw3/skyltprogram@" + v + "/render.min.js";
+
+    const renderScript = document.createElement("script");
+    renderScript.setAttribute("type", "text/javascript");
+    renderScript.setAttribute("async", "true");
+
+    if(!window.location.search.startsWith("?f=")){
+        renderScript.setAttribute("src", "render.js");
+    }else{
+        let url = new URL(window.location.href);
+        let commit = url.searchParams.get("f");
+
+        console.warn(`Kör i kompatibilitetsläge (version ${commit}).`);
+        renderScript.setAttribute("src", PREVIOUS_VERSION_URL(commit));
+    }
+
+    document.body.appendChild(renderScript);
+})();
+        </script>
     </body>
 </html>

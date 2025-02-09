@@ -8,68 +8,11 @@
     <body>
         <div id="header"><select id="selectTemplate"><option value="-1" disabled selected>Ladda ett exempel...</option></select></div>
         <div id="main">
-            <div id="left"><textarea spellcheck="false" id="input">{
-    "type": "junction",
-    "properties": {
-        "background": "#06a",
-        "color": "white",
-        "borderWidth": 4,
-        "font": "\"TratexVersal\""
-    },
-    "nodes": {
-        "left": {
-            "anchor": { "x": "right", "y": "middle-first" },
-            "data": {
-                "type": "skylt",
-                "elements": [
-                    {
-                        "type": "vagnr",
-                        "properties": { "value": "E16", "background": "#097" }
-                    },
-                    {
-                        "type": "text",
-                        "properties": { "value": "OSLO" }
-                    },
-                    { "type": "newline" },
-                    {
-                        "type": "vagnr",
-                        "properties": { "value": "66" }
-                    },
-                    {
-                        "type": "text",
-                        "properties": { "value": "SÄLEN" }
-                    }
-                ]
-            }
-        },
-        "right": {
-            "anchor": { "x": "left", "y": "middle-first" },
-            "data": {
-                "type": "skylt",
-                "elements": [
-                    {
-                        "type": "vagnr",
-                        "properties": { "value": "E16", "background": "#097" }
-                    },
-                    {
-                        "type": "text",
-                        "properties": { "value": "GÄVLE" }
-                    },
-                    { "type": "newline" },
-                    {
-                        "type": "text",
-                        "properties": { "value": "BORLÄNGE" }
-                    }
-                ]
-            }
-        }
-    }
-}</textarea>
-            </div>
+            <div id="left"><textarea spellcheck="false" id="input">{}</textarea></div>
             <div id="right"><iframe id="render" src="about:blank"></iframe></div>
         </div>
         <script>
-(function(){
+(async function(){
     let getJSON = url => {
         return new Promise((resolve, reject) => {
             let req = new XMLHttpRequest();
@@ -81,6 +24,31 @@
         });
     };
 
+    const PREVIOUS_FORMAT_VERSIONS = await getJSON("formatver.json");
+    const CURRENT_FORMAT_ID = PREVIOUS_FORMAT_VERSIONS.length;
+
+    let data_input = document.getElementById("input"), fr = document.getElementById("render");
+
+    data_input.addEventListener("change", () => {
+        let parsed = JSON.parse(data_input.value);
+
+        let dataVersion = parseInt(parsed.format);
+        if(isNaN(dataVersion)) dataVersion = 0;
+
+        if(dataVersion < 0 || dataVersion > CURRENT_FORMAT_ID){
+            alert("ERROR: Unknown data version " + dataVersion + ".");
+            return;
+        }
+
+        let url = "render.html?";
+
+        if(dataVersion !== CURRENT_FORMAT_ID){
+            url += "f=" + PREVIOUS_FORMAT_VERSIONS[dataVersion] + "&";
+        }
+
+        fr.setAttribute("src", url + "data=" + window.encodeURIComponent(JSON.stringify(parsed)));
+    });
+
     getJSON("templates.json").then(templateData => {
         let templateSelect = document.getElementById("selectTemplate");
 
@@ -89,23 +57,22 @@
             option_el.appendChild(document.createTextNode(template.name));
             option_el.setAttribute("value", i.toString(10));
             templateSelect.appendChild(option_el);
+
+            template.json = Object.assign({format: CURRENT_FORMAT_ID}, template.json);
         });
 
-        templateSelect.value = -1;
+        templateSelect.value = data_input.value.length < 6 ? 0 : (-1);
 
         templateSelect.addEventListener("change", () => {
-            data_input.value = JSON.stringify(templateData[parseInt(templateSelect.value)].json, null, 4);
+            let i = parseInt(templateSelect.value);
+
+            if(i >= 0) data_input.value = JSON.stringify(templateData[i].json, null, 4);
+
             data_input.dispatchEvent(new Event("change"));
         });
+
+        templateSelect.dispatchEvent(new Event("change"));
     });
-
-    let data_input = document.getElementById("input"), fr = document.getElementById("render");
-
-    data_input.addEventListener("change", () => {
-        fr.setAttribute("src", "render.html?data=" + window.encodeURIComponent(JSON.stringify(JSON.parse(data_input.value))));
-    });
-
-    data_input.dispatchEvent(new Event("change"));
 })();
         </script>
     </body>
