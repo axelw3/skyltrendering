@@ -25,11 +25,13 @@ const DEFAULTS = { // defaults (applied only to the root tag)
 
 const DEFAULT_PROPERTIES = {
     "skylt": {
-        "padding": [6, 5],
+        "padding": 6,
         "lineSpacing": 4,
         "blockDisplay": false,
         "anchorForwarded": false,
-        "fillCorners": false
+        "fillCorners": false,
+        "alignContentsV": "middle",
+        "alignContents": "left"
     },
     "vagnr": {
         "value": "000",
@@ -53,23 +55,39 @@ const TEMPLATES = {
     "avfart": (no = "1") => ({
         "type": "skylt",
         "properties": {
-            "background": "#ffd908",
-            "borderWidth": 4,
-            "borderRadius": 18,
-            "padding": [4, 0]
+            "padding": 0,
+            "background": "#aaa",
+            "color": "black"
         },
         "elements": [
             {
-                "type": "symbol",
-                "properties": { "type": "exit" }
-            },
-            {
-                "type": "text",
+                "type": "skylt",
                 "properties": {
-                    "value": no
-                }
+                    "background": "#fd0",
+                    "borderWidth": 4,
+                    "borderRadius": 18,
+                    "padding": [5, 0]
+                },
+                "elements": [
+                    {
+                        "type": "symbol",
+                        "properties": { "type": "exit" }
+                    },
+                    {
+                        "type": "text",
+                        "properties": {
+                            "value": no
+                        }
+                    }
+                ]
             }
         ]
+    }),
+    "vagnr": (no = "000") => ({
+        "type": "vagnr",
+        "properties": {
+            "value": no
+        }
     })
 };
 
@@ -451,10 +469,23 @@ class SignElement{
                         dx += SignElement.calculateAlignmentOffset(this.children[i].properties.alignContents, w[c2.row], iw + c2.bs[0] + c2.bs[2]);
                     }
 
+                    let offsetTop = 0;
+
+                    switch(this.properties.alignContentsV){
+                        case "top":
+                            break;
+                        case "bottom":
+                            offsetTop = h[c2.row] - (d.height + c2.bs[1] + c2.bs[3]);
+                            break;
+                        default:
+                            offsetTop = Math.floor((h[c2.row] - (d.height + c2.bs[1] + c2.bs[3])) / 2);
+                            break;
+                    }
+
                     SignElement.drawWithBorder(
                         ctx,
                         padding[0] + c2.x,
-                        padding[1] + y1 + Math.floor((h[c2.row] - (d.height + c2.bs[1] + c2.bs[3])) / 2),
+                        padding[1] + y1 + offsetTop,
                         d,
                         this.children[i].properties,
                         dx, 0,
@@ -514,11 +545,6 @@ class SignElement{
                     if(this.properties.grow && canv.height < maxInnerHeight){
                         canv.height = Math.min(maxInnerHeight, padding[1] + padding[3] + symbolType.height[1]);
                     }
-
-                    //ctx.fillStyle = "#f00";
-                    //ctx.fillRect(0, 0, canv.width, canv.height);
-                    //ctx.fillStyle = "#00f";
-                    //ctx.fillRect(padding[0], padding[1], img.width, canv.height - padding[1] - padding[3]);
 
                     ctx.drawImage(
                         img,
