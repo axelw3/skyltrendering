@@ -25,7 +25,7 @@ const DEFAULTS = { // defaults (applied only to the root tag)
 
 const DEFAULT_PROPERTIES = {
     "skylt": {
-        "padding": 5,
+        "padding": [6, 5],
         "lineSpacing": 4,
         "blockDisplay": false,
         "anchorForwarded": false,
@@ -44,7 +44,8 @@ const DEFAULT_PROPERTIES = {
     "newline": {},
     "symbol": {
         "padding": 5,
-        "type": "arrow-small"
+        "type": "arrow-small",
+        "grow": true
     }
 };
 
@@ -119,12 +120,13 @@ const SKYLTTYPER = {
 const SYMBOLER = {
     "arrow-small": {
         "width": 48,
-        "height": 48,
+        "height": [48, 192],
+        "anchorY": 0,
         "default": "left"
     },
     "exit": {
         "width": 46,
-        "height": 26,
+        "height": [26, 26],
         "default": ""
     }
 };
@@ -364,7 +366,7 @@ class SignElement{
         let padding = Array.from(this.properties.padding);
 
         let width = 0, height = 0;
-        let renderPromise = null;
+        let renderPromise = _ => Promise.resolve(canv);
 
         if(this.type == "skylt"){
             let w = [0], h = [0], j = 0;
@@ -400,12 +402,12 @@ class SignElement{
                 return c2;
             });
 
-            canv.width = width = Math.max(...w) + padding[0] + padding[2];
-            canv.height = height = h.reduce((a, b) => a + b, padding[1] + padding[3] + totalLineSpacing);
+            canv.width = (width = Math.max(...w)) + padding[0] + padding[2];
+            canv.height = (height = h.reduce((a, b) => a + b, totalLineSpacing)) + padding[1] + padding[3];
 
             ch = ch.map(c2 => {
                 if(!c2.isn && !this.properties.blockDisplay){
-                    c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], canv.width - padding[0] - padding[2]);
+                    c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], width);
                 }
 
                 return c2;
@@ -433,7 +435,7 @@ class SignElement{
 
             let y = 0;
 
-            renderPromise = Promise.all(ch.map((c2, i) => {
+            renderPromise = _ => Promise.all(ch.map((c2, i) => {
                 if(c2.isn || (i > 0 && this.properties.blockDisplay)){
                     y += this.children[i].properties.lineSpacing;
                     y += h[c2.row - 1];
@@ -442,8 +444,8 @@ class SignElement{
                 if(c2.isn) return;
 
                 const y1 = y;
-                return c2.r.data.then(d => {
-                    let dx = 0, iw = this.properties.blockDisplay ? (canv.width - padding[0] - padding[2] - c2.bs[0] - c2.bs[2]) : c2.r.w;
+                return c2.r.doRender(h[c2.row] - c2.bs[1] - c2.bs[3]).then(d => {
+                    let dx = 0, iw = this.properties.blockDisplay ? (width - c2.bs[0] - c2.bs[2]) : c2.r.w;
 
                     if(this.properties.blockDisplay){
                         dx += SignElement.calculateAlignmentOffset(this.children[i].properties.alignContents, w[c2.row], iw + c2.bs[0] + c2.bs[2]);
@@ -452,7 +454,7 @@ class SignElement{
                     SignElement.drawWithBorder(
                         ctx,
                         padding[0] + c2.x,
-                        padding[1] + y1 + Math.floor((h[c2.row] - (c2.r.h + c2.bs[1] + c2.bs[3])) / 2),
+                        padding[1] + y1 + Math.floor((h[c2.row] - (d.height + c2.bs[1] + c2.bs[3])) / 2),
                         d,
                         this.children[i].properties,
                         dx, 0,
@@ -465,15 +467,15 @@ class SignElement{
 
             let box = ctx.measureText(this.properties.value);
 
-            canv.width = width = Math.floor(box.width) + padding[0] + padding[2];
-            canv.height = height = this.properties.lineHeight + padding[1] + padding[3];
+            canv.width = (width = Math.floor(box.width)) + padding[0] + padding[2];
+            canv.height = (height = this.properties.lineHeight) + padding[1] + padding[3];
 
             firstLastCenter[0] = Math.floor(canv.width / 2);
             firstLastCenter[1] = Math.floor(canv.height / 2);
             firstLastCenter[2] = firstLastCenter[0];
             firstLastCenter[3] = firstLastCenter[1];
 
-            renderPromise = new Promise(res => {
+            renderPromise = _ => new Promise(res => {
                 if(this.properties.dashedInset){
                     let bw = this.properties.borderWidth;
 
@@ -501,16 +503,30 @@ class SignElement{
             let symbolType = SYMBOLER[this.properties.type];
             let img = document.createElement("img");
 
-            width = symbolType.width;
-            height = symbolType.height;
-            Object.assign(img, { width, height });
+            width = img.width = symbolType.width;
+            [ height, img.height ] = symbolType.height;
 
-            canv.width = (width += (padding[0] + padding[2]));
-            canv.height = (height += (padding[1] + padding[3]));
+            canv.width = width + padding[0] + padding[2];
+            canv.height = height + padding[1] + padding[3];
 
-            renderPromise = new Promise((res, rej) => {
+            renderPromise = (maxInnerHeight = canv.height) => new Promise((res, rej) => {
                 img.addEventListener("load", () => {
-                    ctx.drawImage(img, padding[0], padding[1], img.width, img.height);
+                    if(this.properties.grow && canv.height < maxInnerHeight){
+                        canv.height = Math.min(maxInnerHeight, padding[1] + padding[3] + symbolType.height[1]);
+                    }
+
+                    //ctx.fillStyle = "#f00";
+                    //ctx.fillRect(0, 0, canv.width, canv.height);
+                    //ctx.fillStyle = "#00f";
+                    //ctx.fillRect(padding[0], padding[1], img.width, canv.height - padding[1] - padding[3]);
+
+                    ctx.drawImage(
+                        img,
+                        0, 0,
+                        img.width, canv.height - padding[1] - padding[3],
+                        padding[0], padding[1],
+                        img.width, canv.height - padding[1] - padding[3]
+                    );
                     res(canv);
                 });
                 img.addEventListener("error", rej);
@@ -527,7 +543,7 @@ class SignElement{
             alert("Fel!");
         }
 
-        return { flc: firstLastCenter, w: width, h: height, data: renderPromise };
+        return { flc: firstLastCenter, w: width + padding[0] + padding[2], h: height + padding[1] + padding[3], doRender: renderPromise };
     }
 }
 
@@ -591,6 +607,8 @@ class SignElement{
             let n = data.nodes[nodeName];
             let s = new SignElement(n.data, prop);
 
+            if(n.anchor === undefined) n.anchor = { "x": "left", "y": "top" };
+
             let result = s.render();
             let bs = SignElement.borderSize(result.w, result.h, s.properties);
 
@@ -639,7 +657,7 @@ class SignElement{
                 Math.max(boundingBox[3], topY + rse[1])
             ];
 
-            return { renderPromise: result.data, x: leftX, y: topY, p: s.properties };
+            return { renderPromise: result.doRender(), x: leftX, y: topY, p: s.properties };
         });
 
         canvas.width = 2 * prop.borderWidth + (boundingBox[1] - boundingBox[0]) + 2 * prop.padding;
