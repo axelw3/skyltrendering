@@ -1,14 +1,14 @@
-function roundedFrame(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, borderRadius, lineDash = [1, 0]){
+function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [4, 4, 4, 4], color = "#000", borderRadius = [0, 0, 0, 0], lineDash = [1, 0]){
     // lineDash = [längd, mellanrum]
 
-    if(Math.max(...lineWidth) <= 0) return;
+    if(Math.max(...nominalLineWidth) <= 0) return;
 
     let drawCorner = (cx, cy, signX, signY, i) => {
         cx -= signX * borderRadius[i];
         cy -= signY * borderRadius[i];
 
-        let arx = borderRadius[i] + lineWidth[(Math.ceil(i / 2) * 2) % 4],
-            ary = borderRadius[i] + lineWidth[Math.floor(i / 2) * 2 + 1];
+        let arx = borderRadius[i] + nominalLineWidth[(Math.ceil(i / 2) * 2) % 4],
+            ary = borderRadius[i] + nominalLineWidth[Math.floor(i / 2) * 2 + 1];
 
         ctx.beginPath();
         let startAngle = ((i - 2) * Math.PI) / 2;
@@ -19,10 +19,10 @@ function roundedFrame(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bo
         ctx.fill();
     };
 
-    drawCorner(x0 + lineWidth[0], y0 + lineWidth[1], -1, -1, 0);
-    drawCorner(x0 + outerWidth - lineWidth[2], y0 + lineWidth[1], 1, -1, 1);
-    drawCorner(x0 + outerWidth - lineWidth[2], y0 + outerHeight - lineWidth[3], 1, 1, 2);
-    drawCorner(x0 + lineWidth[0], y0 + outerHeight - lineWidth[3], -1, 1, 3);
+    drawCorner(x0, y0, -1, -1, 0);
+    drawCorner(x0 + innerWidth, y0, 1, -1, 1);
+    drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2);
+    drawCorner(x0, y0 + innerHeight, -1, 1, 3);
 
     let drawLineDash = (innerLength, cb) => {
         let actualLineDash = [lineDash[0], lineDash[1]];
@@ -46,31 +46,31 @@ function roundedFrame(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bo
 
     // Ovanför
     drawLineDash(
-        outerWidth - lineWidth[0] - lineWidth[2] - (borderRadius[0] + borderRadius[1]),
-        (x, w) => ctx.fillRect(x0 + lineWidth[0] + borderRadius[0] + x, y0, w, lineWidth[1])
+        innerWidth - (borderRadius[0] + borderRadius[1]),
+        (x, w) => ctx.fillRect(x0 + borderRadius[0] + x, y0 - nominalLineWidth[1], w, nominalLineWidth[1])
     );
 
     // Nedanför
     drawLineDash(
-        outerWidth - lineWidth[0] - lineWidth[2] - (borderRadius[3] + borderRadius[2]),
-        (x, w) => ctx.fillRect(x0 + lineWidth[0] + borderRadius[3] + x, y0 + outerHeight - lineWidth[3], w, lineWidth[3])
+        innerWidth - (borderRadius[3] + borderRadius[2]),
+        (x, w) => ctx.fillRect(x0 + borderRadius[3] + x, y0 + innerHeight, w, nominalLineWidth[3])
     );
 
     // Vänster
     drawLineDash(
-        outerHeight - lineWidth[1] - lineWidth[3] - (borderRadius[0] + borderRadius[3]),
-        (y, h) => ctx.fillRect(x0, y0 + lineWidth[1] + borderRadius[0] + y, lineWidth[0], h)
+        innerHeight - (borderRadius[0] + borderRadius[3]),
+        (y, h) => ctx.fillRect(x0 - nominalLineWidth[0], y0 + borderRadius[0] + y, nominalLineWidth[0], h)
     );
 
     // Höger
     drawLineDash(
-        outerHeight - lineWidth[1] - lineWidth[3] - (borderRadius[1] + borderRadius[2]),
-        (y, h) => ctx.fillRect(x0 + outerWidth - lineWidth[2], y0 + lineWidth[1] + borderRadius[1] + y, lineWidth[2], h)
+        innerHeight - (borderRadius[1] + borderRadius[2]),
+        (y, h) => ctx.fillRect(x0 + innerWidth, y0 + borderRadius[1] + y, nominalLineWidth[2], h)
     );
 }
 
 
-function roundedFill(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth, borderRadius, background, borderWidth, fillCorners = false){
+function roundedFill(ctx, x0, y0, innerWidth, innerHeight, borderWidth = [4, 4, 4, 4], borderRadius = [0, 0, 0, 0], background = "#fff", fillCorners = false){
     // lineDash = [längd, mellanrum]
 
     ctx.fillStyle = background;
@@ -81,8 +81,8 @@ function roundedFill(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth, bor
     }
 
     let drawCorner = (cx, cy, signX, signY, i) => {
-        let arx = borderRadius[i] + nominalLineWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
-            ary = borderRadius[i] + nominalLineWidth[Math.floor(i / 2) * 2 + 1] / 2;
+        let arx = borderRadius[i] + borderWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
+            ary = borderRadius[i] + borderWidth[Math.floor(i / 2) * 2 + 1] / 2;
 
         let startAngle = ((i - 2) * Math.PI) / 2;
         ctx.ellipse(

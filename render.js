@@ -33,7 +33,7 @@ const DEFAULT_PROPERTIES = {
         "padding": 6,
         "lineSpacing": 4,
         "blockDisplay": false,
-        "anchorForwarded": false,
+        "passAnchor": false,
         "alignContentsV": "middle",
         "alignContents": "left"
     },
@@ -284,10 +284,9 @@ class SignElement{
             ctx,
             x0 + bs.h[0], y0 + bs.h[1],
             borderBoxInnerW, innerContents.height,
-            properties.borderWidth,
+            properties.borderWidth.map((x, i) => bfs[i] ? 0 : x),
             br,
             properties.background,
-            properties.borderWidth.map((x, i) => bfs[i] ? 0 : x),
             !!properties.fillCorners
         );
 
@@ -299,9 +298,9 @@ class SignElement{
 
         roundedFrame(
             ctx,
-            x0 + bs.h[0] - properties.borderWidth[0], y0 + bs.h[1] - properties.borderWidth[1],
-            borderBoxInnerW + properties.borderWidth[0] + properties.borderWidth[2], innerContents.height + properties.borderWidth[1] + properties.borderWidth[3],
-            properties.borderWidth,
+            x0 + bs.h[0], y0 + bs.h[1],
+            borderBoxInnerW, innerContents.height,
+            properties.borderWidth.map((x, i) => bfs[i] ? 0 : x),
             properties.color,
             br
         );
@@ -441,7 +440,7 @@ class SignElement{
         let canv = document.createElement("canvas");
         let ctx = canv.getContext("2d");
 
-        let firstLastCenter = [0, 0, 0, 0]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
+        let firstLastCenter = null; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         let padding = Array.from(this.properties.padding);
 
@@ -494,14 +493,15 @@ class SignElement{
             });
 
             // mitt-x (element), se även if-sats nedan
-            firstLastCenter[0] = padding[0] + ch[0].x + ch[0].bs[0];
-            firstLastCenter[2] = padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bs[0];
-
             // mitt-y (rad), se även if-sats nedan
-            firstLastCenter[1] = padding[1];
-            firstLastCenter[3] = canv.height - padding[3];
+            firstLastCenter = [
+                padding[0] + ch[0].x + ch[0].bs[0],
+                padding[1],
+                padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bs[0],
+                canv.height - padding[3]
+            ];
 
-            if(this.properties.anchorForwarded){
+            if(this.properties.passAnchor){
                 firstLastCenter[0] += ch[0].r.flc[0];
                 firstLastCenter[1] += ch[0].bs[1] + ch[0].r.flc[1];
                 firstLastCenter[2] += ch[ch.length - 1].r.flc[2];
@@ -546,11 +546,6 @@ class SignElement{
 
             canv.width = (width = Math.floor(box.width)) + padding[0] + padding[2];
             canv.height = (height = this.properties.lineHeight) + padding[1] + padding[3];
-
-            firstLastCenter[0] = Math.floor(canv.width / 2);
-            firstLastCenter[1] = Math.floor(canv.height / 2);
-            firstLastCenter[2] = firstLastCenter[0];
-            firstLastCenter[3] = firstLastCenter[1];
 
             renderPromise = _ => new Promise(res => {
                 if(this.properties.dashedInset){
@@ -748,6 +743,14 @@ class SignElement{
         }
 
         let bs = SignElement.borderSize(width + padding[0] + padding[2], height + padding[1] + padding[3], this.properties);
+
+        if(firstLastCenter === null){
+            firstLastCenter = [
+                Math.floor(canv.width / 2),
+                Math.floor(canv.height / 2)
+            ];
+            firstLastCenter.push(...firstLastCenter);
+        }
 
         return {
             flc: firstLastCenter,

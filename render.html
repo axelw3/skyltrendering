@@ -6,27 +6,36 @@
     </head>
     <body style="background: #aaa;">
         <canvas></canvas>
-        <script src="graphics.js"></script>
+        <!--<script src="graphics.js"></script>-->
         <script src="utils.js"></script>
         <script>
-(function(){
-    const PREVIOUS_VERSION_URL = v => "https://cdn.jsdelivr.net/gh/axelw3/skyltprogram@" + v + "/render.min.js";
+(async function(){
+    const SCRIPTS = ["graphics.js", "render.js"];
+    const PREVIOUS_VERSION_URL = v => "https://cdn.jsdelivr.net/gh/axelw3/skyltprogram@" + v + "/";
 
-    const renderScript = document.createElement("script");
-    renderScript.setAttribute("type", "text/javascript");
-    renderScript.setAttribute("async", "true");
-
-    if(!window.location.search.startsWith("?f=")){
-        renderScript.setAttribute("src", "render.js");
-    }else{
+    let baseUrl = "";
+    if(window.location.search.startsWith("?f=")){
         let url = new URL(window.location.href);
         let commit = url.searchParams.get("f");
-
+        baseUrl = PREVIOUS_VERSION_URL(commit);
         console.warn(`Kör i kompatibilitetsläge (version ${commit}).`);
-        renderScript.setAttribute("src", PREVIOUS_VERSION_URL(commit));
     }
 
-    document.body.appendChild(renderScript);
+    for(let i = 0; i < SCRIPTS.length; i++){
+        const scr = document.createElement("script");
+        scr.setAttribute("type", "text/javascript");
+
+        let loading = new Promise((resolve, reject) => {
+            scr.addEventListener("load", resolve);
+            scr.addEventListener("error", reject);
+        });
+
+        scr.setAttribute("src", baseUrl + SCRIPTS[i]);
+
+        document.body.appendChild(scr);
+
+        await loading;
+    }
 })();
         </script>
     </body>
