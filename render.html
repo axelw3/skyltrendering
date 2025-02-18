@@ -7,8 +7,9 @@
     <body style="background: #aaa;">
         <canvas></canvas>
         <script src="graphics.js"></script>
+        <script src="utils.js"></script>
         <script>
-(async function(){
+(function(){
     const PREVIOUS_VERSION_URL = v => "https://cdn.jsdelivr.net/gh/axelw3/skyltprogram@" + v + "/render.min.js";
 
     const renderScript = document.createElement("script");

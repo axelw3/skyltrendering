@@ -70,19 +70,19 @@ function roundedFrame(ctx, x0, y0, outerWidth, outerHeight, lineWidth, color, bo
 }
 
 
-function roundedFill(ctx, x0, y0, innerWidth, innerHeight, lineWidth, borderRadius, background, borderSize, fillCorners = false){
+function roundedFill(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth, borderRadius, background, borderWidth, fillCorners = false){
     // lineDash = [längd, mellanrum]
 
     ctx.fillStyle = background;
 
-    if(fillCorners || Math.max(...lineWidth) <= 0){
-        ctx.fillRect(x0 - borderSize[0], y0 - borderSize[1], innerWidth + borderSize[0] + borderSize[2], innerHeight + borderSize[1] + borderSize[3]);
+    if(fillCorners || Math.max(...borderWidth) === 0){
+        ctx.fillRect(x0 - borderWidth[0], y0 - borderWidth[1], innerWidth + borderWidth[0] + borderWidth[2], innerHeight + borderWidth[1] + borderWidth[3]);
         return;
     }
 
     let drawCorner = (cx, cy, signX, signY, i) => {
-        let arx = borderRadius[i] + lineWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
-            ary = borderRadius[i] + lineWidth[Math.floor(i / 2) * 2 + 1] / 2;
+        let arx = borderRadius[i] + nominalLineWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
+            ary = borderRadius[i] + nominalLineWidth[Math.floor(i / 2) * 2 + 1] / 2;
 
         let startAngle = ((i - 2) * Math.PI) / 2;
         ctx.ellipse(
