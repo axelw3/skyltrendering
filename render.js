@@ -156,15 +156,16 @@ const SYMBOLER = {
 const BORDER_FEATURES = {
     "bracket": {
         "paths": [
-            { "p": "M-100,0H0L22,27L44,0H100", "s": 0, "f": 1 } // konstanta värden OK eftersom ingen storleksanpassning görs
+            { "p": "M-100,0H0L22,27L44,0H100", "s": 1, "f": 2 } // konstanta värden OK eftersom ingen storleksanpassning görs
         ],
         "size": [44, 27],
         "cover": false // true om storleken skall anpassas (OBS! linjebredd påverkas ej) så att kantens längd täcks
     },
     "arrow": {
         "paths": [
-            { "p": "M0,0L${w/2},${h*17/27}L${w},0z", "f": 1 },
-            { "p": "M0,-100V0L${w/2},${h*17/27}L${w},0V-100V0L${w/2},${h*25/27}L0,0z", "s": 0, "f": 0 }
+            { "p": "M0,0V${h}H${w}V0z", "f": -2, "s": -2 },
+            { "p": "M0,0L${w/2},${h*17/27}L${w},0z", "f": 2 },
+            { "p": "M0,-100V0L${w/2},${h*17/27}L${w},0V-100V0L${w/2},${h*25/27}L0,0z", "s": 1, "f": 1 }
         ],
         "size": [0, "w*27/44"],
         "cover": true
@@ -180,14 +181,15 @@ const BORDER_FEATURES = {
             ["margin", "30"]
         ],
         "paths": [
-            { "p": "M0,0V${-k*x1+sqrt((2*R_1-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": 1, "s": 1 },
+            { "p": "M0,0V${-k*x1+sqrt((2*R_1-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": -2, "s": -2 },
             {
                 "p": "M0,-100V${margin}A${R_1},${R_1},0,0,0,${x1},${sqrt((2*R_1-x1*x1))+margin}L${-2*R_2+w+xr},${a+sqrt((2*R_2-xr*xr))+margin}A${R_2},${R_2},0,0,0,${w},${a+margin}V-100z",
-                "s": 0
+                "s": 1,
+                "f": 2
             },
             {
                 "p": "M${w/2-43},0m5,0l-5,7l65,38l-8,14l29,-7l-10,-27l-8,12l-64,-36z",
-                "f": 0
+                "f": 1
             }
         ],
         "size": [0, "w-x1*k+sqrt((2*R_1-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin"],
@@ -382,13 +384,13 @@ class SignElement{
             let p = new Path2D(parseVarStr(path.p, bs.el[bri].env));
 
             if(path.f !== undefined){
-                ctx.fillStyle = [color, background][path.f];
-                ctx.fill(p);
+                ctx.fillStyle = [color, background][Math.abs(path.f)-1];
+                if(path.f > 0 || properties.fillCorners) ctx.fill(p);
             }
 
             if(path.s !== undefined){
-                ctx.strokeStyle = [color, background][path.s];
-                ctx.stroke(p);
+                ctx.strokeStyle = [color, background][Math.abs(path.s)-1];
+                if(path.s > 0 || properties.fillCorners) ctx.stroke(p);
             }
         });
 

@@ -48,6 +48,10 @@
         "json": {"type":"skylt","properties":{"padding":0,"blockDisplay":true,"lineSpacing":0,"background":"#06a","color":"white","borderWidth":0,"font":"\"TratexVersal\""},"elements":[{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"vagnr","properties":{"value":"80"}},{"type":"text","properties":{"value":"GÄVLE"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"left"}},{"type":"vagnr","properties":{"value":"272"}},{"type":"text","properties":{"value":"BOLLNÄS"}}]},{"type":"skylt","properties":{"borderWidth":3},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"right"}},{"type":"text","properties":{"value":"FORSBACKA"}}]}]}
     },
     {
+        "name": "F7. Avfartsvisare, Transportstyrelsens exempel",
+        "json": {"type":"skylt","properties":{"borderWidth":4,"borderRadius":4,"borderFeatures":{"right":"diag"},"padding":6,"font":"\"TratexVersal\"","fillCorners":true},"elements":[{"type":"vagnr","properties":{"value":"70"}},{"type":"text","properties":{"value":"MORA"}},{"type":"newline"},{"type":"text","properties":{"value":"ENKÖPING"}}]}
+    },
+    {
         "name": "F8. Körfältsvägvisare, Transportstyrelsens exempel 1/2",
         "json": {"type":"skylt","properties":{"background":"#06a","color":"white","borderWidth":4,"font":"\"TratexVersal\"","padding":10},"elements":[{"type":"symbol","properties":{"type":"arrow-small","variant":"fwd"}},{"type":"text","properties":{"value":"BODA"}}]}
     },
