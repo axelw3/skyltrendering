@@ -80,3 +80,14 @@ function parseVarStr(str, vars = {}){
 
     return result.join("") + str.substring(i);
 }
+
+function getText(url){
+    return new Promise((resolve, reject) => {
+        let req = new XMLHttpRequest();
+        req.addEventListener("load", () => {
+            resolve(req.responseText);
+        });
+        req.open("GET", url);
+        req.send();
+    });
+}

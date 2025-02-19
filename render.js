@@ -18,7 +18,7 @@ const GLOBAL_DEFAULTS = {
 const DEFAULTS = { // defaults (applied only to the root tag)
     "background": "#06a",
     "color": "white",
-    "borderRadius": 4,
+    "borderRadius": 8,
     "font": "sans-serif",
     "lineHeight": 46,
     "fillCorners": true
@@ -35,12 +35,13 @@ const DEFAULT_PROPERTIES = {
         "blockDisplay": false,
         "passAnchor": false,
         "alignContentsV": "middle",
-        "alignContents": "left"
+        "alignContents": "left",
+        "xSpacing": 8
     },
     "vagnr": {
         "value": "000",
         "borderWidth": 3,
-        "borderRadius": 4,
+        "borderRadius": 7,
         "dashedInset": false,
         "padding": [14, 2]
     },
@@ -69,7 +70,7 @@ const TEMPLATES = {
                 "properties": {
                     "background": "#fd0",
                     "borderWidth": 4,
-                    "borderRadius": 18,
+                    "borderRadius": 22,
                     "padding": [5, 0]
                 },
                 "elements": [
@@ -92,10 +93,13 @@ const TEMPLATES = {
         "properties": {
             "value": no
         }
+    }),
+    "symgroup": (...s) => ({
+        "type": "skylt",
+        "properties": {"padding": 0, "xSpacing": 0, "borderWidth": [3, 0, 0, 0], "borderRadius": 0, "color": "black", "background": "white"},
+        "elements": s.map(x => ({"type": "symbol", "properties": {"type": Array.isArray(x) ? x[0] : x, "variant": Array.isArray(x) ? x[1] : undefined , "borderWidth": [0, 3, 3, 3], "padding": 1}}))
     })
 };
-
-const SKYLT_ELEMENT_SPACING_X = 8;
 
 const SKYLTTYPER = {
     "junction": {
@@ -130,12 +134,13 @@ const SKYLTTYPER = {
         }
     },
     "spanish": {
-        "width": 160,
-        "height": 240,
-        "core": [0, 1, 0, 1],
+        "width": 200,
+        "height": 360,
+        "core": [.1, .8, 0, .65],
         "nodes": {
-            "fwd": { "x": [0, 1], "y": [0, 0], "ay": "bottom" },
-            "left": { "x": [0, 0], "y": [.33, .33], "ax": "right" }
+            "fwd": { "x": [.1, .7], "y": [0, 0], "ay": "bottom" },
+            "left": { "x": [0, 0], "y": [.22, .22], "ax": "right" },
+            "right": { "x": [1, 1], "y": [.22, .22], "ax": "left" }
         }
     }
 };
@@ -151,7 +156,34 @@ const SYMBOLER = {
         "width": 46,
         "height": [26, 26],
         "default": ""
-    }
+    },
+    "h1": { "width": 40, "height": [40, 40], "default": "" },
+    "h2": { "width": 40, "height": [40, 40], "default": "" },
+    "h3": { "width": 40, "height": [40, 40], "default": "" },
+    "h4": { "width": 40, "height": [40, 40], "default": "cng" },
+    "h5": { "width": 40, "height": [40, 40], "default": "" },
+    "h6": { "width": 40, "height": [40, 40], "default": "" },
+    "h7": { "width": 40, "height": [40, 40], "default": "" },
+    "h8": { "width": 40, "height": [40, 40], "default": "" },
+    "h9": { "width": 40, "height": [40, 40], "default": "" },
+    "h10": { "width": 40, "height": [40, 40], "default": "" },
+    "h11": { "width": 40, "height": [40, 40], "default": "" },
+    "h12": { "width": 40, "height": [40, 40], "default": "" },
+    "h13": { "width": 40, "height": [40, 40], "default": "" },
+    "h14": { "width": 40, "height": [40, 40], "default": "" },
+    "h15": { "width": 40, "height": [40, 40], "default": "" },
+    "h16": { "width": 40, "height": [40, 40], "default": "" },
+    "h17": { "width": 40, "height": [40, 40], "default": "" },
+    "h18": { "width": 40, "height": [40, 40], "default": "" },
+    "h19": { "width": 40, "height": [40, 40], "default": "" },
+    "h20": { "width": 40, "height": [40, 40], "default": "" },
+    "h21": { "width": 40, "height": [40, 40], "default": "" },
+    "h22": { "width": 40, "height": [40, 40], "default": "" },
+    "h24": { "width": 40, "height": [40, 40], "default": "" },
+    "h25": { "width": 40, "height": [40, 40], "default": "" },
+    "h26": { "width": 40, "height": [40, 40], "default": "" },
+    "h27": { "width": 40, "height": [40, 40], "default": "" },
+    "h28": { "width": 40, "height": [40, 40], "default": "" }
 };
 
 // Samtliga designer sparas i "nedre kant"-form, dvs.
@@ -181,18 +213,16 @@ const BORDER_FEATURES = {
     },
     "diag": {
         "vars": [
-            ["R_1", "bw/2+bra"],
-            ["R_2", "bw/2+brb"],
             ["k", "35/60"],
-            ["x1", "1-(k/sqrt((k*k+1)))*R_1"],
-            ["xr", "1-(k/sqrt((k*k+1)))*R_2"],
-            ["a", "-2*R_2+w+xr-x1*k+sqrt((2*R_1-x1*x1))-sqrt((2*R_2-xr*xr))"],
+            ["x1", "1-(k/sqrt((k*k+1)))*bra"],
+            ["xr", "1-(k/sqrt((k*k+1)))*brb"],
+            ["a", "-2*brb+w+xr-x1*k+sqrt((2*bra-x1*x1))-sqrt((2*brb-xr*xr))"],
             ["margin", "30"]
         ],
         "paths": [
-            { "p": "M0,0V${-k*x1+sqrt((2*R_1-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": -2, "s": -2 },
+            { "p": "M0,0V${-k*x1+sqrt((2*bra-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": -2, "s": -2 },
             {
-                "p": "M0,-100V${margin}A${R_1},${R_1},0,0,0,${x1},${sqrt((2*R_1-x1*x1))+margin}L${-2*R_2+w+xr},${a+sqrt((2*R_2-xr*xr))+margin}A${R_2},${R_2},0,0,0,${w},${a+margin}V-100z",
+                "p": "M0,-100V${margin}A${bra},${bra},0,0,0,${x1},${sqrt((2*bra-x1*x1))+margin}L${-2*brb+w+xr},${a+sqrt((2*brb-xr*xr))+margin}A${brb},${brb},0,0,0,${w},${a+margin}V-100z",
                 "s": 1,
                 "f": 2
             },
@@ -201,7 +231,7 @@ const BORDER_FEATURES = {
                 "f": 1
             }
         ],
-        "size": [0, "w-x1*k+sqrt((2*R_1-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin"],
+        "size": [0, "w-x1*k+sqrt((2*bra-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin"],
         "cover": true
     }
 };
@@ -477,7 +507,7 @@ class SignElement{
 
                 if(!c2.isn){
                     if(w[j] > 0){
-                        w[j] += SKYLT_ELEMENT_SPACING_X;
+                        w[j] += this.properties.xSpacing;
                     }
 
                     c2.x = w[j];
@@ -607,10 +637,13 @@ class SignElement{
                 });
                 img.addEventListener("error", rej);
 
-                let url = "svg/symbol/" + window.encodeURIComponent(this.properties.type) + ".svg"
-                    + "#" + window.encodeURIComponent(this.properties.variant || symbolType.default);
+                let url = "svg/symbol/" + window.encodeURIComponent(this.properties.type) + ".svg";
 
-                img.src = url;
+                getText(url).then(xml => {
+                    img.src = "data:image/svg+xml;utf8,"
+                        + window.encodeURIComponent(String(xml).replace(/currentColor/g, this.properties.color))
+                        + "#" + window.encodeURIComponent(this.properties.variant || symbolType.default);
+                });
             });
         }else if(this.type == "newline"){
             width = 0;

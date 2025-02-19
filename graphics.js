@@ -4,16 +4,30 @@ function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [
     if(Math.max(...nominalLineWidth) <= 0) return;
 
     let drawCorner = (cx, cy, signX, signY, i) => {
-        cx -= signX * borderRadius[i];
-        cy -= signY * borderRadius[i];
+        let w0 = nominalLineWidth[(Math.ceil(i / 2) * 2) % 4],
+            w1 = nominalLineWidth[Math.floor(i / 2) * 2 + 1],
+            br = borderRadius[i];
 
-        let arx = borderRadius[i] + nominalLineWidth[(Math.ceil(i / 2) * 2) % 4],
-            ary = borderRadius[i] + nominalLineWidth[Math.floor(i / 2) * 2 + 1];
+        let arx = Math.max(br - w0, 0),
+            ary = Math.max(br - w1, 0);
+
+        cx -= signX * arx;
+        cy -= signY * ary;
+
+        let startAngle = ((i - 2) * Math.PI) / 2 + Math.PI/4;
+
+        let v1 = startAngle - signX*signY*Math.PI/4,
+            v2 = startAngle + signX*signY*Math.PI/4;
 
         ctx.beginPath();
-        let startAngle = ((i - 2) * Math.PI) / 2;
-        ctx.ellipse(cx, cy, arx, ary, 0, startAngle, startAngle + Math.PI / 2, false);
-        ctx.ellipse(cx, cy, borderRadius[i], borderRadius[i], 0, startAngle + Math.PI / 2, startAngle, true);
+        //ctx.moveTo(cx + signX * arx, cy);
+        ctx.moveTo(cx + signX*(arx+w0), cy);
+        ctx.lineTo(cx + signX*(arx+w0), cy + signY * Math.max(0, w1 - br));
+        ctx.ellipse(cx + signX*Math.max(0, w0 - br), cy + signY * Math.max(0, w1 - br), br, br, 0, v1, v2, signX !== signY);
+        ctx.lineTo(cx, cy + signY*(ary+w1));
+        ctx.lineTo(cx, cy + signY*ary);
+        ctx.ellipse(cx, cy, arx, ary, 0, v2, v1, signX === signY);
+        //ctx.closePath();
 
         ctx.fillStyle = color;
         ctx.fill();
@@ -46,26 +60,26 @@ function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [
 
     // Ovanför
     drawLineDash(
-        innerWidth - (borderRadius[0] + borderRadius[1]),
-        (x, w) => ctx.fillRect(x0 + borderRadius[0] + x, y0 - nominalLineWidth[1], w, nominalLineWidth[1])
+        innerWidth - Math.max(0, borderRadius[0] - nominalLineWidth[0]) - Math.max(0, borderRadius[1] - nominalLineWidth[2]),
+        (x, w) => ctx.fillRect(x0 + Math.max(0, borderRadius[0] - nominalLineWidth[0]) + x, y0 - nominalLineWidth[1], w, nominalLineWidth[1])
     );
 
     // Nedanför
     drawLineDash(
-        innerWidth - (borderRadius[3] + borderRadius[2]),
-        (x, w) => ctx.fillRect(x0 + borderRadius[3] + x, y0 + innerHeight, w, nominalLineWidth[3])
+        innerWidth - Math.max(0, borderRadius[3] - nominalLineWidth[0]) - Math.max(0, borderRadius[2] - nominalLineWidth[2]),
+        (x, w) => ctx.fillRect(x0 + Math.max(0, borderRadius[3] - nominalLineWidth[0]) + x, y0 + innerHeight, w, nominalLineWidth[3])
     );
 
     // Vänster
     drawLineDash(
-        innerHeight - (borderRadius[0] + borderRadius[3]),
-        (y, h) => ctx.fillRect(x0 - nominalLineWidth[0], y0 + borderRadius[0] + y, nominalLineWidth[0], h)
+        innerHeight - Math.max(0, borderRadius[0] - nominalLineWidth[1]) - Math.max(0, borderRadius[3] - nominalLineWidth[3]),
+        (y, h) => ctx.fillRect(x0 - nominalLineWidth[0], y0 + Math.max(0, borderRadius[0] - nominalLineWidth[1]) + y, nominalLineWidth[0], h)
     );
 
     // Höger
     drawLineDash(
-        innerHeight - (borderRadius[1] + borderRadius[2]),
-        (y, h) => ctx.fillRect(x0 + innerWidth, y0 + borderRadius[1] + y, nominalLineWidth[2], h)
+        innerHeight - Math.max(0, borderRadius[1] - nominalLineWidth[1]) - Math.max(0, borderRadius[2] - nominalLineWidth[3]),
+        (y, h) => ctx.fillRect(x0 + innerWidth, y0 + Math.max(0, borderRadius[1] - nominalLineWidth[1]) + y, nominalLineWidth[2], h)
     );
 }
 
