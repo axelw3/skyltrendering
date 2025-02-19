@@ -136,9 +136,9 @@ const SKYLTTYPER = {
     "spanish": {
         "width": 200,
         "height": 360,
-        "core": [.1, .8, 0, .65],
+        "core": [.12, .78, 0, .65],
         "nodes": {
-            "fwd": { "x": [.1, .7], "y": [0, 0], "ay": "bottom" },
+            "fwd": { "x": [.08, .72], "y": [0, 0], "ay": "bottom" },
             "left": { "x": [0, 0], "y": [.22, .22], "ax": "right" },
             "right": { "x": [1, 1], "y": [.22, .22], "ax": "left" }
         }
