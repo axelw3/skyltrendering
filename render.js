@@ -128,6 +128,15 @@ const SKYLTTYPER = {
         "nodes": {
             "name": { "x": [.5, .5], "y": [-.1, -.1], "ax": "center", "ay": "bottom" }
         }
+    },
+    "spanish": {
+        "width": 160,
+        "height": 240,
+        "core": [0, 1, 0, 1],
+        "nodes": {
+            "fwd": { "x": [0, 1], "y": [0, 0], "ay": "bottom" },
+            "left": { "x": [0, 0], "y": [.33, .33], "ax": "right" }
+        }
     }
 };
 
@@ -553,8 +562,8 @@ class SignElement{
 
                     roundedFrame(
                         ctx,
-                        bw[0], bw[1],
-                        canv.width - bw[0] - bw[2], canv.height - bw[1] - bw[3],
+                        2*bw[0], 2*bw[1],
+                        canv.width - 2*bw[0] - 2*bw[2], canv.height - 2*bw[1] - 2*bw[3],
                         bw,
                         this.properties.color,
                         this.properties.borderRadius,
