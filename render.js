@@ -1,4 +1,6 @@
-(function(){
+(async function(){
+
+const CONFIG = JSON.parse(await getText("config.json"));
 
 // Priority:
 // 1. Specified value
@@ -7,54 +9,23 @@
 // 4. DEFAULTS (if root)
 // 5. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = ["color", "background", "font", "borderRadius", "lineHeight", "lineSpacing"]; // properties that can be inherited
+const INHERITED = CONFIG.properties.inherit; // properties that can be inherited
+const GLOBAL_DEFAULTS = CONFIG.properties.globalDefaults;
+const DEFAULTS = CONFIG.properties.rootDefaults;
+const DEFAULT_PROPERTIES = CONFIG.properties.defaults;
 
-const GLOBAL_DEFAULTS = {
-    "borderFeatures": {},
-    "borderWidth": 0,
-    "padding": 0
-};
+const SKYLTTYPER = CONFIG.signTypes;
+const SYMBOLER = CONFIG.symbols;
 
-const DEFAULTS = { // defaults (applied only to the root tag)
-    "background": "#06a",
-    "color": "white",
-    "borderRadius": 8,
-    "font": "sans-serif",
-    "lineHeight": 46,
-    "fillCorners": true
-};
-
-const DEFAULT_PROPERTIES = {
-    ".": {
-        "borderWidth": 4,
-        "padding": 8
-    },
-    "skylt": {
-        "padding": 6,
-        "lineSpacing": 4,
-        "blockDisplay": false,
-        "passAnchor": false,
-        "alignContentsV": "middle",
-        "alignContents": "left",
-        "xSpacing": 8
-    },
-    "vagnr": {
-        "value": "000",
-        "borderWidth": 3,
-        "borderRadius": 7,
-        "dashedInset": false,
-        "padding": [14, 2]
-    },
-    "text": {
-        "value": "Text"
-    },
-    "newline": {},
-    "symbol": {
-        "padding": 5,
-        "type": "arrow-small",
-        "grow": true
-    }
-};
+// Samtliga designer sparas i "nedre kant"-form, dvs.
+// i en orientering motsvarande klammern i skylt
+// F9 (samlingsmärke för vägvisning).
+// 
+// Värdena för size och anchor antar en hypotetisk
+// linjebredd = 0. Vid rendering adderas den valda
+// linjebredden/2 i alla 4 riktningar, samt till
+// ankarkoordinaterna (anchor).
+const BORDER_FEATURES = CONFIG.borderFeatures;
 
 const TEMPLATES = {
     "avfart": (no = "1") => ({
@@ -99,142 +70,6 @@ const TEMPLATES = {
         "properties": {"padding": 0, "xSpacing": 0, "borderWidth": [3, 0, 0, 0], "borderRadius": 0, "color": "black", "background": "white"},
         "elements": s.map(x => ({"type": "symbol", "properties": {"type": Array.isArray(x) ? x[0] : x, "variant": Array.isArray(x) ? x[1] : undefined , "borderWidth": [0, 3, 3, 3], "padding": 1}}))
     })
-};
-
-const SKYLTTYPER = {
-    "junction": {
-        "width": 120,
-        "height": 240,
-
-        // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
-        "core": [.4, .6, .15, .44], // [leftX, rightX, topY, bottomY]
-
-        "nodes": {
-            "fwd": { "x": [.2, .8], "y": [0, 0], "ay": "bottom" },
-            "right": { "x": [1, 1], "y": [.27, .27], "ax": "left" },
-            "left": { "x": [0, 0], "y": [.27, .27], "ax": "right" },
-            "lright": { "x": [1, 1], "y": [.434, .434], "ax": "left" }
-        }
-    },
-    "roundabout": {
-        "width": 240,
-        "height": 480,
-        "core": [.35, .75, .09, .35],
-        "nodes": {
-            "fwd": { "x": [.5, .5], "y": [.03, .03], "ay": "bottom" },
-            "right": { "x": [.9, .9], "y": [.21, .21], "ax": "left" },
-            "left": { "x": [.1, .1], "y": [.21, .21], "ax": "right" }
-        }
-    },
-    "water": {
-        "width": 209,
-        "height": 19,
-        "core": [0, 1, 0, 1],
-        "nodes": {
-            "name": { "x": [.5, .5], "y": [-.1, -.1], "ax": "center", "ay": "bottom" }
-        }
-    },
-    "spanish": {
-        "width": 200,
-        "height": 360,
-        "core": [.12, .78, 0, .65],
-        "nodes": {
-            "fwd": { "x": [.08, .72], "y": [0, 0], "ay": "bottom" },
-            "left": { "x": [0, 0], "y": [.22, .22], "ax": "right" },
-            "right": { "x": [1, 1], "y": [.22, .22], "ax": "left" }
-        }
-    }
-};
-
-const SYMBOLER = {
-    "arrow-small": {
-        "width": 48,
-        "height": [48, 192],
-        "anchorY": 0,
-        "default": "left"
-    },
-    "exit": {
-        "width": 46,
-        "height": [26, 26],
-        "default": ""
-    },
-    "h1": { "width": 40, "height": [40, 40], "default": "" },
-    "h2": { "width": 40, "height": [40, 40], "default": "" },
-    "h3": { "width": 40, "height": [40, 40], "default": "" },
-    "h4": { "width": 40, "height": [40, 40], "default": "cng" },
-    "h5": { "width": 40, "height": [40, 40], "default": "" },
-    "h6": { "width": 40, "height": [40, 40], "default": "" },
-    "h7": { "width": 40, "height": [40, 40], "default": "" },
-    "h8": { "width": 40, "height": [40, 40], "default": "" },
-    "h9": { "width": 40, "height": [40, 40], "default": "" },
-    "h10": { "width": 40, "height": [40, 40], "default": "" },
-    "h11": { "width": 40, "height": [40, 40], "default": "" },
-    "h12": { "width": 40, "height": [40, 40], "default": "" },
-    "h13": { "width": 40, "height": [40, 40], "default": "" },
-    "h14": { "width": 40, "height": [40, 40], "default": "" },
-    "h15": { "width": 40, "height": [40, 40], "default": "" },
-    "h16": { "width": 40, "height": [40, 40], "default": "" },
-    "h17": { "width": 40, "height": [40, 40], "default": "" },
-    "h18": { "width": 40, "height": [40, 40], "default": "" },
-    "h19": { "width": 40, "height": [40, 40], "default": "" },
-    "h20": { "width": 40, "height": [40, 40], "default": "" },
-    "h21": { "width": 40, "height": [40, 40], "default": "" },
-    "h22": { "width": 40, "height": [40, 40], "default": "" },
-    "h24": { "width": 40, "height": [40, 40], "default": "" },
-    "h25": { "width": 40, "height": [40, 40], "default": "" },
-    "h26": { "width": 40, "height": [40, 40], "default": "" },
-    "h27": { "width": 40, "height": [40, 40], "default": "" },
-    "h28": { "width": 40, "height": [40, 40], "default": "" }
-};
-
-// Samtliga designer sparas i "nedre kant"-form, dvs.
-// i en orientering motsvarande klammern i skylt
-// F9 (samlingsmärke för vägvisning).
-// 
-// Värdena för size och anchor antar en hypotetisk
-// linjebredd = 0. Vid rendering adderas den valda
-// linjebredden/2 i alla 4 riktningar, samt till
-// ankarkoordinaterna (anchor).
-const BORDER_FEATURES = {
-    "bracket": {
-        "paths": [
-            { "p": "M-100,0H0L22,27L44,0H100", "s": 1, "f": 2 } // konstanta värden OK eftersom ingen storleksanpassning görs
-        ],
-        "size": [44, 27],
-        "cover": false // true om storleken skall anpassas (OBS! linjebredd påverkas ej) så att kantens längd täcks
-    },
-    "arrow": {
-        "paths": [
-            { "p": "M0,0V${h}H${w}V0z", "f": -2, "s": -2 },
-            { "p": "M0,0L${w/2},${h*17/27}L${w},0z", "f": 2 },
-            { "p": "M0,-100V0L${w/2},${h*17/27}L${w},0V-100V0L${w/2},${h*25/27}L0,0z", "s": 1, "f": 1 }
-        ],
-        "size": [0, "w*27/44"],
-        "cover": true
-    },
-    "diag": {
-        "vars": [
-            ["k", "35/60"],
-            ["x1", "1-(k/sqrt((k*k+1)))*bra"],
-            ["xr", "1-(k/sqrt((k*k+1)))*brb"],
-            ["a", "-2*brb+w+xr-x1*k+sqrt((2*bra-x1*x1))-sqrt((2*brb-xr*xr))"],
-            ["margin", "30"]
-        ],
-        "paths": [
-            { "p": "M0,0V${-k*x1+sqrt((2*bra-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": -2, "s": -2 },
-            {
-                "p": "M0,-100V${margin}A${bra},${bra},0,0,0,${x1},${sqrt((2*bra-x1*x1))+margin}L${-2*brb+w+xr},${a+sqrt((2*brb-xr*xr))+margin}A${brb},${brb},0,0,0,${w},${a+margin}V-100z",
-                "s": 1,
-                "f": 2
-            },
-            {
-                "p": "M${w/2-43},0m5,0l-5,7l65,38l-8,14l29,-7l-10,-27l-8,12l-64,-36z",
-                "f": 1
-            }
-        ],
-        "size": [0, "w-x1*k+sqrt((2*bra-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin"],
-        "cover": true
-    }
 };
 
 function to4EForm(data){
