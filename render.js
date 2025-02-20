@@ -107,12 +107,13 @@ const SKYLTTYPER = {
         "height": 240,
 
         // bestämmer del av texturen som MÅSTE ingå (denna yta utökas sedan så att åtminstone all önskade noder ryms, men maximalt [0, 1, 0, 1])
-        "core": [.4, .6, .15, .36], // [leftX, rightX, topY, bottomY]
+        "core": [.4, .6, .15, .44], // [leftX, rightX, topY, bottomY]
 
         "nodes": {
             "fwd": { "x": [.2, .8], "y": [0, 0], "ay": "bottom" },
-            "right": { "x": [1, 1], "y": [.25, .25], "ax": "left" },
-            "left": { "x": [0, 0], "y": [.25, .25], "ax": "right" }
+            "right": { "x": [1, 1], "y": [.27, .27], "ax": "left" },
+            "left": { "x": [0, 0], "y": [.27, .27], "ax": "right" },
+            "lright": { "x": [1, 1], "y": [.434, .434], "ax": "left" }
         }
     },
     "roundabout": {

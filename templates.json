@@ -16,6 +16,10 @@
         "json": {"type":".junction","properties":{"borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"left"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"50"}},{"type":"text","properties":{"value":"FALUN"}}]}},"right":{"anchor":{"y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LINDESBERG"}}]}}}}
     },
     {
+        "name": "F1-1. Orienteringstavla, exempel med pilar i olika höjd",
+        "json": {"type":".junction","properties":{"borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"fwd":{"anchor":{"x":"center"},"data":{"type":"skylt","properties":{"xSpacing":0},"elements":[{"type":"vagnr","properties":{"value":"E16","background":"#097"}},{"type":"vagnr","properties":{"value":"66"}}]}},"left":{"anchor":{"y":"middle-first"},"data":{"type":"text","properties":{"value":"SKAMHED"}}},"lright":{"anchor":{"y":"middle-first"},"data":{"type":"text","properties":{"value":"SKÅLÖ"}}}}}
+    },
+    {
         "name": "F1-2. Orienteringstavla, exempel",
         "json": {"type":".roundabout","properties":{"borderWidth":4,"font":"\"TratexVersal\""},"nodes":{"left":{"anchor":{"y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"LISTA"}}]}},"fwd":{"anchor":{"x":"center"},"data":{"type":"skylt","elements":[{"type":"vagnr","properties":{"value":"E20","background":"#097"}},{"type":"text","properties":{"value":"GÖTEBORG"}},{"type":"newline"},{"type":"vagnr","properties":{"value":"56"}},{"type":"text","properties":{"value":"NORRKÖPING"}}]}},"right":{"anchor":{"y":"middle"},"data":{"type":"skylt","elements":[{"type":"text","properties":{"value":"TUMBO"}}]}}}}
     },
