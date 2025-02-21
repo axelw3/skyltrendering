@@ -85,13 +85,13 @@
         "h28": { "width": 40, "height": [40, 40], "default": "" }
     },
     "borderFeatures": {
-        "bracket": { "paths": [{ "p": "M-100,0H0L22,27L44,0H100", "s": 1, "f": 2 }], "size": [44, 27], "cover": false },
-        "arrow": { "paths": [{ "p": "M0,0V${h}H${w}V0z", "f": -2, "s": -2 }, { "p": "M0,0L${w/2},${h*17/27}L${w},0z", "f": 2 }, { "p": "M0,-100V0L${w/2},${h*17/27}L${w},0V-100V0L${w/2},${h*25/27}L0,0z", "s": 1, "f": 1 }], "size": [0, "w*27/44"], "cover": true },
+        "bracket": { "paths": [{ "p": "M-${bw/2},0H0L22,27L44,0H${bw/2+w}", "s": 1, "f": 2 }], "size": [44, 27], "cover": false },
+        "arrow": { "paths": [{ "p": "M0,0V${h}H${w}V0z", "f": -2, "s": -2 }, { "p": "M0,0L${w/2},${h*17/27}L${w},0z", "f": 2 }, { "p": "M0,-${bw/2}V0L${w/2},${h*17/27}L${w},0V-${bw/2}V0L${w/2},${h*25/27}L0,0z", "s": 1, "f": 1 }], "size": [0, "w*27/44"], "cover": true },
         "diag": {
             "vars": [["k", "35/60"], ["x1", "1-(k/sqrt((k*k+1)))*bra"], ["xr", "1-(k/sqrt((k*k+1)))*brb"], ["a", "-2*brb+w+xr-x1*k+sqrt((2*bra-x1*x1))-sqrt((2*brb-xr*xr))"], ["margin", "30"]],
             "paths": [
                 { "p": "M0,0V${-k*x1+sqrt((2*bra-x1*x1))+margin}L${w},${-sqrt((k*k+1))-k+1*bw/2+h}V0z", "f": -2, "s": -2 },
-                { "p": "M0,-100V${margin}A${bra},${bra},0,0,0,${x1},${sqrt((2*bra-x1*x1))+margin}L${-2*brb+w+xr},${a+sqrt((2*brb-xr*xr))+margin}A${brb},${brb},0,0,0,${w},${a+margin}V-100z", "s": 1, "f": 2 },
+                { "p": "M0,-${bw/2}V${margin}A${bra},${bra},0,0,0,${x1},${sqrt((2*bra-x1*x1))+margin}L${-2*brb+w+xr},${a+sqrt((2*brb-xr*xr))+margin}A${brb},${brb},0,0,0,${w},${a+margin}V-${bw/2}", "s": 1, "f": 2 },
                 { "p": "M${w/2-43},0m5,0l-5,7l65,38l-8,14l29,-7l-10,-27l-8,12l-64,-36z", "f": 1 }
             ],
             "size": [0, "w-x1*k+sqrt((2*bra-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin"],
