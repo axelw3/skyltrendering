@@ -4,12 +4,11 @@ const CONFIG = JSON.parse(await getText("config.json"));
 
 // Priority:
 // 1. Specified value
-// 2. Value from parent (if property is inherited)
+// 2. Value from parent (if property is inherited) or DEFAULTS (if root)
 // 3. Default value (from DEFAULT_PROPERTIES)
-// 4. DEFAULTS (if root)
-// 5. Global defaults (GLOBAL_DEFAULTS)
+// 4. Global defaults (GLOBAL_DEFAULTS)
 
-const INHERITED = CONFIG.properties.inherit; // properties that can be inherited
+//const INHERITED = CONFIG.properties.inherit; // properties that can be inherited
 const GLOBAL_DEFAULTS = CONFIG.properties.globalDefaults;
 const DEFAULTS = CONFIG.properties.rootDefaults;
 const DEFAULT_PROPERTIES = CONFIG.properties.defaults;
@@ -20,11 +19,6 @@ const SYMBOLER = CONFIG.symbols;
 // Samtliga designer sparas i "nedre kant"-form, dvs.
 // i en orientering motsvarande klammern i skylt
 // F9 (samlingsmärke för vägvisning).
-// 
-// Värdena för size och anchor antar en hypotetisk
-// linjebredd = 0. Vid rendering adderas den valda
-// linjebredden/2 i alla 4 riktningar, samt till
-// ankarkoordinaterna (anchor).
 const BORDER_FEATURES = CONFIG.borderFeatures;
 
 const TEMPLATES = {
@@ -80,8 +74,8 @@ function to4EForm(data){
 
 class BorderElement{
     constructor(featureName, bw, brA, brB, sideLength){
-        let w0 = BORDER_FEATURES[featureName].size[0],
-            h0 = BORDER_FEATURES[featureName].size[1],
+        let w0 = BORDER_FEATURES[featureName].w,
+            h0 = BORDER_FEATURES[featureName].h,
             cvr = !!BORDER_FEATURES[featureName].cover;
 
         if(cvr) w0 = sideLength - bw;
@@ -233,29 +227,31 @@ class SignElement{
 
         this.type = data.type;
 
-        let prop = data.properties || {};
+        let prop = Object.assign(
+            {},
+            GLOBAL_DEFAULTS,
+            DEFAULT_PROPERTIES[data.type.startsWith(".") ? "." : data.type],
+            parentProperties === null ? DEFAULTS : parentProperties,
+            data.properties
+        );
 
-        this.properties = Object.assign({}, GLOBAL_DEFAULTS);
+        this.properties = Object.assign(prop, {
+            padding: to4EForm(prop.padding),
+            borderRadius: to4EForm(prop.borderRadius),
+            borderWidth: to4EForm(prop.borderWidth)
+        });
 
-        if(parentProperties === null){
-            Object.assign(this.properties, DEFAULTS);
-        }else{
-            INHERITED.forEach(key => {
-                if(prop[key] !== undefined || parentProperties[key] === undefined) return;
-                prop[key] = parentProperties[key];
-            });
-        }
+        let inh = this._getInhProperties();
 
-        Object.assign(this.properties, DEFAULT_PROPERTIES[data.type.startsWith(".") ? "." : data.type], prop);
-
-        this.children = (data.elements || []).map(element => new SignElement(element, this.properties));
+        this.children = (data.elements || []).map(element => new SignElement(element, inh));
 
         this.nodes = (data.nodes || {});
-        Object.keys(this.nodes).forEach(key => this.nodes[key].signelement = new SignElement(this.nodes[key].data, this.properties));
+        Object.keys(this.nodes).forEach(key => this.nodes[key].signelement = new SignElement(this.nodes[key].data, inh));
+    }
 
-        this.properties.padding = to4EForm(this.properties.padding);
-        this.properties.borderRadius = to4EForm(this.properties.borderRadius);
-        this.properties.borderWidth = to4EForm(this.properties.borderWidth);
+    _getInhProperties(){
+        const { background, borderRadius, color, font, lineHeight, lineSpacing } = this.properties;
+        return { background, borderRadius, color, font, lineHeight, lineSpacing };
     }
 
     render(){
@@ -336,7 +332,7 @@ class SignElement{
 
             renderPromise = (ctx, x0, y0, _) => Promise.all(ch.map((c2, i) => {
                 if(c2.isn || (i > 0 && this.properties.blockDisplay)){
-                    y += this.children[i].properties.lineSpacing;
+                    y += (this.properties.blockDisplay ? this.properties.lineSpacing : this.children[i].properties.lineSpacing);
                     y += h[c2.row - 1];
                 }
 
@@ -444,7 +440,7 @@ class SignElement{
                 svgBox[1] * t.width,
                 svgBox[2] * t.height,
                 svgBox[3] * t.height
-            ];
+            ].map(Math.floor);
 
             // fonts and svg loaded successfully
             let r = keys.map(nodeName => {
