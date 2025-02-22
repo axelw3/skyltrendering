@@ -6,36 +6,40 @@
     </head>
     <body style="background: #aaa;">
         <canvas></canvas>
-        <!--<script src="graphics.js"></script>-->
-        <script src="utils.js"></script>
-        <script>
-(async function(){
-    const SCRIPTS = ["graphics.js", "render.js"];
-    const PREVIOUS_VERSION_URL = v => "https://cdn.jsdelivr.net/gh/axelw3/skyltprogram@" + v + "/";
+        <script type="module">
+import SignElement from "./dist/render.js";
 
-    let baseUrl = "";
-    if(window.location.search.startsWith("?f=")){
+(function(){
+    const canvas = document.getElementsByTagName("canvas")[0];
+    const ctx = canvas.getContext("2d");
+
+    const tratex = new FontFace(
+        "Tratex",
+        "url(TratexSvart-Regular.otf)",
+    );
+
+    const tratexVersal = new FontFace(
+        "TratexVersal",
+        "url(TRATEXPOSVERSAL-POSVERSAL.otf)",
+    );
+
+    document.fonts.add(tratex);
+    document.fonts.add(tratexVersal);
+
+    Promise.all([tratex.load(), tratexVersal.load()]).then(() => {
         let url = new URL(window.location.href);
-        let commit = url.searchParams.get("f");
-        baseUrl = PREVIOUS_VERSION_URL(commit);
-        console.warn(`Kör i kompatibilitetsläge (version ${commit}).`);
-    }
+        if(!url.searchParams.has("data") || ctx === null) return;
 
-    for(let i = 0; i < SCRIPTS.length; i++){
-        const scr = document.createElement("script");
-        scr.setAttribute("type", "text/javascript");
+        let data = JSON.parse(url.searchParams.get("data") || "");
 
-        let loading = new Promise((resolve, reject) => {
-            scr.addEventListener("load", resolve);
-            scr.addEventListener("error", reject);
-        });
+        let sign = new SignElement(data, null);
+        let r = sign.render();
 
-        scr.setAttribute("src", baseUrl + SCRIPTS[i]);
+        let bs = r.bs;
+        Object.assign(canvas, { width: r.w + bs[0] + bs[2], height: r.h + bs[1] + bs[3] });
 
-        document.body.appendChild(scr);
-
-        await loading;
-    }
+        r.doRender(ctx, 0, 0, 0, sign.properties, r.h);
+    });
 })();
         </script>
     </body>

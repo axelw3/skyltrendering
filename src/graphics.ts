@@ -1,9 +1,11 @@
-function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [4, 4, 4, 4], color = "#000", borderRadius = [0, 0, 0, 0], lineDash = [1, 0]){
+import type { DrawingContext, Vec4, Vec2 } from "./typedefs.js";
+
+export function roundedFrame(ctx: DrawingContext, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], color: string = "#000", borderRadius: Vec4 = [0, 0, 0, 0], lineDash: Vec2 = [1, 0]){
     // lineDash = [längd, mellanrum]
 
     if(Math.max(...nominalLineWidth) <= 0) return;
 
-    let drawCorner = (cx, cy, signX, signY, i) => {
+    let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number) => {
         let w0 = nominalLineWidth[(Math.ceil(i / 2) * 2) % 4],
             w1 = nominalLineWidth[Math.floor(i / 2) * 2 + 1],
             br = borderRadius[i];
@@ -38,7 +40,7 @@ function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [
     drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2);
     drawCorner(x0, y0 + innerHeight, -1, 1, 3);
 
-    let drawLineDash = (innerLength, cb) => {
+    let drawLineDash = (innerLength: number, cb: (z: number, s: number) => void) => {
         let actualLineDash = [lineDash[0], lineDash[1]];
 
         let r = 0;
@@ -84,7 +86,7 @@ function roundedFrame(ctx, x0, y0, innerWidth, innerHeight, nominalLineWidth = [
 }
 
 
-function roundedFill(ctx, x0, y0, innerWidth, innerHeight, borderWidth = [4, 4, 4, 4], borderRadius = [0, 0, 0, 0], background = "#fff", fillCorners = false){
+export function roundedFill(ctx: DrawingContext, x0: number, y0: number, innerWidth: number, innerHeight: number, borderWidth: Vec4 = [4, 4, 4, 4], borderRadius: Vec4 = [0, 0, 0, 0], background: string = "#fff", fillCorners: boolean = false){
     // lineDash = [längd, mellanrum]
 
     ctx.fillStyle = background;
@@ -94,7 +96,7 @@ function roundedFill(ctx, x0, y0, innerWidth, innerHeight, borderWidth = [4, 4, 
         return;
     }
 
-    let drawCorner = (cx, cy, signX, signY, i) => {
+    let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number) => {
         let arx = borderRadius[i] + borderWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
             ary = borderRadius[i] + borderWidth[Math.floor(i / 2) * 2 + 1] / 2;
 

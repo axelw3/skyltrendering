@@ -1,7 +1,11 @@
-function mathEval(str = "", vars = {}){
-    let values = [0], operators = ["+"], tmp = "";
+import type { MathEnv } from "./typedefs.js";
 
-    let doOp = (a, op, b) => {
+export function mathEval(str: string | number, vars: MathEnv = {}): number{
+    if(typeof str === "number") return str;
+
+    let v = [0], operators = ["+"], tmp = "";
+
+    let doOp = (a: number = 0, op: string = "+", b: number = 0): number => {
         switch(op){
             case "+":
                 a += b;
@@ -30,7 +34,7 @@ function mathEval(str = "", vars = {}){
             case " ":
                 continue;
             case "(":
-                values.push(0);
+                v.push(0);
                 if(tmp.length > 0){
                     operators.push(tmp);
                     tmp = "";
@@ -43,15 +47,15 @@ function mathEval(str = "", vars = {}){
             case "/":
             case "+":
             case "-":
-                let x0 = tmp.length > 0 ? doOp(values.pop(), operators.pop(), isNaN(tmp) ? vars[tmp] : parseFloat(tmp)) : values.pop();
+                let x0 = tmp.length > 0 ? doOp(v.pop(), operators.pop(), isNaN(parseFloat(tmp)) ? vars[tmp] : parseFloat(tmp)) : v.pop();
                 tmp = "";
 
                 if(c === ")"){
-                    values[values.length - 1] = doOp(values[values.length - 1], operators.pop(), x0);
+                    v[v.length - 1] = doOp(v[v.length - 1], operators.pop(), x0);
                     break;
                 }
 
-                values.push(x0);
+                v.push(x0 || 0);
                 operators.push(c);
                 break;
             default:
@@ -59,13 +63,13 @@ function mathEval(str = "", vars = {}){
         }
     }
 
-    return values[0];
+    return v[0];
 }
 
-function parseVarStr(str, vars = {}){
+export function parseVarStr(str: string, vars = {}): string{
     const EXPRESSION = new RegExp(/\$\{([^\{\}]+)\}/g);
 
-    let result = [];
+    let result: string[] = [];
 
     let i = 0;
     while(true){
@@ -81,8 +85,8 @@ function parseVarStr(str, vars = {}){
     return result.join("") + str.substring(i);
 }
 
-function getText(url){
-    return new Promise((resolve, reject) => {
+export function getText(url: string): Promise<string>{
+    return new Promise(resolve => {
         let req = new XMLHttpRequest();
         req.addEventListener("load", () => {
             resolve(req.responseText);

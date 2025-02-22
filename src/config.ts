@@ -1,11 +1,12 @@
-{
+import { ConfigData } from "./typedefs.js"
+
+const CONFIG: ConfigData =  {
     "properties": {
-        "inherit": ["color", "background", "font", "borderRadius", "lineHeight", "lineSpacing"],
         "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
-        "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "font": "sans-serif", "lineHeight": 46, "lineSpacing": 4, "fillCorners": true },
+        "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "font": "sans-serif", "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
         "defaults": {
             ".": { "borderWidth": 4, "padding": 8 },
-            "skylt": { "padding": 6, "blockDisplay": false, "passAnchor": false, "alignContentsV": "middle", "alignContents": "left", "xSpacing": 8 },
+            "skylt": { "padding": 6, "blockDisplay": false, "passAnchor": false, "alignContentsV": "middle" },
             "vagnr": { "value": "000", "borderWidth": 3, "borderRadius": 7, "dashedInset": false, "padding": [14, 2] },
             "text": { "value": "Text" },
             "newline": {},
@@ -98,5 +99,51 @@
             "h": "w-x1*k+sqrt((2*bra-x1*x1))+(sqrt((k*k+1))+k-1*bw/2)+margin",
             "cover": true
         }
+    },
+    "templates": {
+        "avfart": (no = "1") => ({
+            "type": "skylt",
+            "properties": {
+                "padding": 0,
+                "background": "#aaa",
+                "color": "black"
+            },
+            "elements": [
+                {
+                    "type": "skylt",
+                    "properties": {
+                        "background": "#fd0",
+                        "borderWidth": 4,
+                        "borderRadius": 22,
+                        "padding": [5, 0]
+                    },
+                    "elements": [
+                        {
+                            "type": "symbol",
+                            "properties": { "type": "exit" }
+                        },
+                        {
+                            "type": "text",
+                            "properties": {
+                                "value": no
+                            }
+                        }
+                    ]
+                }
+            ]
+        }),
+        "vagnr": (no = "000") => ({
+            "type": "vagnr",
+            "properties": {
+                "value": no
+            }
+        }),
+        "symgroup": (...s: (string | string[])[]) => ({
+            "type": "skylt",
+            "properties": {"padding": 0, "xSpacing": 0, "borderWidth": [3, 0, 0, 0], "borderRadius": 0, "color": "black", "background": "white"},
+            "elements": s.map(x => ({"type": "symbol", "properties": {"type": Array.isArray(x) ? x[0] : x, "variant": Array.isArray(x) ? x[1] : undefined , "borderWidth": [0, 3, 3, 3], "padding": 1}}))
+        })
     }
 }
+
+export default CONFIG;
