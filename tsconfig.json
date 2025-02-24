@@ -5,11 +5,12 @@
         "noLib": false,
 
         /* Modules */
-        "module": "NodeNext",
+        "module": "node16",
         "rootDir": "./src",
-        "moduleResolution": "nodenext",
+        "moduleResolution": "node16",
 
         /* Emit */
+        "declaration": true,
         "outDir": "./dist",
         "removeComments": true,
 
@@ -30,5 +31,8 @@
         "noImplicitReturns": true,
         "noUncheckedIndexedAccess": false,
         "noImplicitOverride": true
-    }
+    },
+    "files": ["./src/main.ts"],
+    "include": ["./src/**.ts"],
+    "exclude": ["./src/browser.ts"]
 }

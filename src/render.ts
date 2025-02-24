@@ -1,4 +1,4 @@
-import type {MathEnv, Vec4, SignElementProperties, DrawingContext, SignElementOptions, SignElementBaseProperties, RenderingResult} from "./typedefs.js"
+import type {MathEnv, Vec4, SignElementProperties, DrawingContext, SignElementOptions, SignElementBaseProperties, RenderingResult, DrawingCanvas, Vec6, Path2D} from "./typedefs.js"
 import CONFIG from "./config.js";
 import {roundedFill, roundedFrame} from "./graphics.js";
 import {mathEval, parseVarStr, getText} from "./utils.js";
@@ -81,8 +81,11 @@ class BorderDimensions{
     }
 }
 
-export default class SignElement{
-    static borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
+export abstract class SignElement<T extends DrawingCanvas>{
+    protected abstract _createCanvas(w?: number, h?: number): T;
+    protected abstract _createPath2D(s: string, m?: Vec6): Path2D;
+
+    private static borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
         let bs = new BorderDimensions(properties.borderWidth);
 
         if(properties.borderFeatures["left"] !== undefined)
@@ -100,7 +103,7 @@ export default class SignElement{
         return bs;
     }
 
-    static calculateAlignmentOffset(alignMode: string | undefined, innerWidth: number, outerWidth: number){
+    private static calculateAlignmentOffset(alignMode: string | undefined, innerWidth: number, outerWidth: number){
         switch(alignMode){
             case "center":
                 return Math.floor((outerWidth - innerWidth) / 2);
@@ -112,14 +115,14 @@ export default class SignElement{
         }
     }
 
-    static renderBorderFeature(ctx: DrawingContext, x0: number, y0: number, featureName: string, side: string, properties: SignElementProperties, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number){
-        let color = properties.color,
-            background = properties.background;
+    private renderBorderFeature(ctx: DrawingContext, x0: number, y0: number, featureName: string, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number){
+        let color = this.properties.color,
+            background = this.properties.background;
 
         let lr = (side === "left" || side === "right");
         let bri = lr ? (side === "left" ? 0 : 2) : (side === "top" ? 1 : 3);
 
-        let bw = properties.borderWidth[bri];
+        let bw = this.properties.borderWidth[bri];
         let s = [bs.el[bri]?.w || 0, bs.h[bri]];
 
         let feature = BORDER_FEATURES[featureName];
@@ -148,9 +151,9 @@ export default class SignElement{
         let sr = lr ? (side === "left" ? 1 : (-1)) : 0, cr = lr ? 0 : (side === "top" ? (-1) : 1);
         let [a, b] = [(s[0] - bw) / 2, (s[1] - bw) / 2];
 
-        let tm = new DOMMatrix().translateSelf(x0 + w / 2, y0 + h / 2).multiplySelf(new DOMMatrix([
-            cr, sr, -sr, cr, -a*cr + b*sr, -a*sr - b*cr
-        ]));
+        let tm: Vec6 = [
+            cr, sr, -sr, cr, (x0 + w / 2) - a*cr + b*sr, (y0 + h / 2) - a*sr - b*cr
+        ];
 
         //ctx.fillStyle="#000";
         //ctx.fillRect(x0, y0, w, h);
@@ -161,27 +164,26 @@ export default class SignElement{
         ctx.lineWidth = bw;
 
         feature.paths.forEach(path => {
-            let p = new Path2D();
-            p.addPath(new Path2D(parseVarStr(path.p, bs.el[bri]?.env)), tm);
+            let p = this._createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
 
             if(path.f !== undefined){
                 ctx.fillStyle = [color, background][Math.abs(path.f)-1];
-                if(path.f > 0 || properties.fillCorners) ctx.fill(p);
+                if(path.f > 0 || this.properties.fillCorners) ctx.fill(p);
             }
 
             if(path.s !== undefined){
                 ctx.strokeStyle = [color, background][Math.abs(path.s)-1];
-                if(path.s > 0 || properties.fillCorners) ctx.stroke(p);
+                if(path.s > 0 || this.properties.fillCorners) ctx.stroke(p);
             }
         });
     }
 
-    type: string;
-    properties: SignElementProperties;
-    children: SignElement[];
-    nodes: {[key: string]: {signelement: SignElement, anchor: {x?: string, y?: string}}}
+    private type: string;
+    private properties: SignElementProperties;
+    private children: SignElement<T>[];
+    private nodes: {[key: string]: {signelement: SignElement<T>, anchor: {x?: string, y?: string}}};
 
-    constructor(data: SignElementOptions, parentProperties: SignElementBaseProperties | null){
+    protected static resolveTemplate(data: SignElementOptions): SignElementOptions{
         while(data.type.startsWith("#")){
             let templateName = data.type.slice(1);
             if(!TEMPLATES[templateName]){
@@ -190,10 +192,14 @@ export default class SignElement{
             }
 
             let template = TEMPLATES[templateName](...(data.params || []));
-            Object.assign(template.properties, data.properties);
+            template.properties = Object.assign(template.properties || {}, data.properties);
             data = template;
         }
 
+        return data;
+    }
+
+    protected constructor(data: SignElementOptions, parentProperties: SignElementBaseProperties | null){
         this.type = data.type;
 
         let prop = Object.assign(
@@ -210,25 +216,29 @@ export default class SignElement{
             borderWidth: to4EForm(prop.borderWidth)
         });
 
-        let inh = this._getInhProperties();
-
-        this.children = (data.elements || []).map(element => new SignElement(element, inh));
-
+        this.children = [];
         this.nodes = {};
+    }
+
+    protected addCN<X extends SignElement<T>>(Cl: new (opt: any, inh: SignElementBaseProperties | null) => X, data: SignElementOptions){
+        let inh = this.getInhProperties();
+
+        this.children = (data.elements || []).map(element => new Cl(element, inh));
+
         Object.entries(data.nodes || {}).forEach(e => {
             this.nodes[e[0]] = {
-                signelement: new SignElement(e[1].data, inh),
+                signelement: new Cl(e[1].data, inh),
                 anchor: e[1].anchor
             }
         });
     }
 
-    _getInhProperties(): SignElementBaseProperties{
+    private getInhProperties(): SignElementBaseProperties{
         const { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing } = this.properties;
         return { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing };
     }
 
-    render(): RenderingResult{
+    private _render(): RenderingResult{
         let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         let padding = Array.from(this.properties.padding);
@@ -243,7 +253,7 @@ export default class SignElement{
             let totalLineSpacing = 0;
 
             let ch = this.children.map((c, i) => {
-                let re = c.render();
+                let re = c._render();
                 let c2 = { isn: c.type == "newline", r: re, bs: re.bs, row: j, x: 0 };
 
                 if(c2.isn || (i > 0 && this.properties.blockDisplay)){
@@ -320,14 +330,13 @@ export default class SignElement{
                     ctx,
                     x0 + padding[0] + c2.x, y0 + padding[1] + y,
                     dx,
-                    this.children[i].properties,
                     h[c2.row] - c2.bs[1] - c2.bs[3],
                     this.properties.alignContentsV,
                     iw
                 );
             })).then(() => {});
         }else if(this.type == "vagnr" || this.type == "text"){
-            let ctx_temp = document.createElement("canvas").getContext("2d") as DrawingContext;
+            let ctx_temp = this._createCanvas().getContext("2d") as DrawingContext;
 
             ctx_temp.font = "32px " + this.properties.font;
 
@@ -419,7 +428,7 @@ export default class SignElement{
 
                 n.anchor = Object.assign({ "x": tn.ax, "y": tn.ay }, n.anchor);
 
-                let result = s.render();
+                let result = s._render();
                 let bs = result.bs;
 
                 let rse = [ result.w + bs[0] + bs[2], result.h + bs[1] + bs[3] ];
@@ -480,7 +489,7 @@ export default class SignElement{
 
                 let dx = 0;
 
-                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, res.p, res.renderPromise.h, this.properties.alignContentsV);
+                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, res.renderPromise.h, this.properties.alignContentsV);
             })).then(() => {
                 if(t.width == 0 || t.height == 0) return;
 
@@ -501,8 +510,7 @@ export default class SignElement{
                     svg.onerror = reject;
                     svg.src = "svg/" + this.type.slice(1) + ".svg#" + keys.join("_");
                 }).then(() => {
-                    let svgRasterized = document.createElement("canvas");
-                    Object.assign(svgRasterized, { width: t.width, height: t.height });
+                    let svgRasterized = this._createCanvas(t.width, t.height);
                     (svgRasterized.getContext("2d") as DrawingContext).drawImage(svg, 0, 0, t.width, t.height);
 
                     ctx.drawImage(
@@ -539,7 +547,7 @@ export default class SignElement{
             w: width + padding[0] + padding[2],
             h: height + padding[1] + padding[3],
             bs: bs.h,
-            doRender: async (ctx: DrawingContext, x0: number, y0: number, dx: number, prop: SignElementProperties, maxInnerHeight, verticalAlign?: string, iw = 0) => {
+            doRender: async (ctx: DrawingContext, x0: number, y0: number, dx: number, maxInnerHeight, verticalAlign?: string, iw = 0) => {
                 const dy = 0;
                 const innerWidth = iw === 0 ? (width + padding[0] + padding[2]) : iw;
                 let innerHeight = height + padding[1] + padding[3];
@@ -559,12 +567,12 @@ export default class SignElement{
 
                 // tag bort rundade hörn på sidor med hela kantutsmyckningar
                 let bfs = ["left", "top", "right", "bottom"].map(s => {
-                    let bf = prop.borderFeatures[s];
+                    let bf = this.properties.borderFeatures[s];
                     return bf !== undefined && BORDER_FEATURES[bf].cover; // cover => hel, täcker hela kantens längd
                 });
 
-                let br: Vec4 = [...prop.borderRadius],
-                    bw: Vec4 = [...prop.borderWidth];
+                let br: Vec4 = [...this.properties.borderRadius],
+                    bw: Vec4 = [...this.properties.borderWidth];
 
                 for(let i = 0; i < 4; i++){
                     if(bfs[i] || bfs[(i + 1) % 4]) br[i] = 0;
@@ -577,8 +585,8 @@ export default class SignElement{
                     innerWidth, innerHeight,
                     bw,
                     br,
-                    prop.background,
-                    !!prop.fillCorners
+                    this.properties.background,
+                    !!this.properties.fillCorners
                 );
 
                 await renderPromise(ctx, x0 + dx + bs.h[0], y0 + dy + bs.h[1], innerHeight);
@@ -588,14 +596,28 @@ export default class SignElement{
                     x0 + bs.h[0], y0 + bs.h[1],
                     innerWidth, innerHeight,
                     bw,
-                    prop.color,
+                    this.properties.color,
                     br
                 );
 
-                Object.entries(prop.borderFeatures).forEach(feature => {
-                    SignElement.renderBorderFeature(ctx, x0, y0, feature[1], feature[0], prop, bs, innerWidth, innerHeight);
+                Object.entries(this.properties.borderFeatures).forEach(feature => {
+                    this.renderBorderFeature(ctx, x0, y0, feature[1], feature[0], bs, innerWidth, innerHeight);
                 });
             }
         };
+    }
+
+    public render(): Promise<T>{
+        let canv = this._createCanvas();
+
+        let r = this._render();
+
+        let bs = r.bs;
+        Object.assign(canv, { width: r.w + bs[0] + bs[2], height: r.h + bs[1] + bs[3] });
+
+        let ctx = canv.getContext("2d");
+        if(ctx === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
+
+        return r.doRender(ctx, 0, 0, 0, r.h).then(() => canv);
     }
 }

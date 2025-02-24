@@ -1,16 +1,24 @@
 {
-    "name": "skyltprogram",
+    "name": "skyltrendering",
     "version": "1.0.0",
     "description": "",
-    "type": "module",
-    "main": "index.js",
+    "main": "dist/main.js",
+    "browser": "index.esm.js",
     "scripts": {
-        "start": "tsc --watch",
-        "build": "tsc"
+        "clean": "node ./utils/clean.js ./dist/",
+        "install": "npm run build",
+        "build": "npm run clean && npm run build-node && npm run build-web",
+        "build-node": "tsc",
+        "build-web": "esbuild ./src/browser.ts --format=esm --bundle --outfile=./index.esm.js"
     },
     "author": "axelw3",
     "license": "AGPL-3.0-or-later",
     "devDependencies": {
-        "typescript": "^5.7.3"
+        "@types/node": "^22.13.5",
+        "typescript": "^5.7.3",
+        "esbuild": "^0.25.0"
+    },
+    "dependencies": {
+        "@napi-rs/canvas": "^0.1.67"
     }
 }

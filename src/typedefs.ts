@@ -2,6 +2,7 @@ export type MathEnv = { [key: string]: number};
 
 export type Vec2 = [number, number];
 export type Vec4 = [number, number, number, number];
+export type Vec6 = [number, number, number, number, number, number];
 
 type BorderFeatureDefinition = {
     vars?: string[][];
@@ -31,35 +32,7 @@ type SignSymbolDefinition = {
     default: string;
 };
 
-export type ConfigData = {
-    properties: {
-        globalDefaults: SignElementUserProperties;
-        rootDefaults: SignElementBaseProperties & SignElementUserProperties;
-        defaults: {[key: string]: SignElementUserProperties};
-    },
-    signTypes: {
-        [key: string]: SignTypeDefinition
-    },
-    symbols: {
-        [key: string]: SignSymbolDefinition
-    },
-    borderFeatures: {
-        [key: string]: BorderFeatureDefinition
-    },
-    templates: {
-        [key: string]: (...args: any[]) => SignElementOptions
-    }
-};
-
-export type RenderingResult = {
-    flc: Vec4;
-    w: number;
-    h: number;
-    bs: Vec4;
-    doRender: (ctx: DrawingContext, x0: number, y0: number, dx: number, prop: any, maxInnerHeight: number, verticalAlign?: string, iw?: number) => Promise<void>;
-};
-
-// properties som ärvs
+// properties som ärvs (måste därför specificeras av rootDefaults)
 export type SignElementBaseProperties = {
     background: string;
     borderRadius: number[] | number;
@@ -70,58 +43,92 @@ export type SignElementBaseProperties = {
     xSpacing: number;
 };
 
-type SignElementOptionalUserProperties = {
-    alignContents?: string;
-    alignContentsV?: string;
-    blockDisplay?: boolean;
-    dashedInset?: boolean;
-    fillCorners?: boolean;
-    grow?: boolean;
-    passAnchor?: boolean;
-    type?: string; // symbol
-    value?: string; // text, vagnr
-    variant?: string; // symbol
+// properties (utöver de i SignElementBaseProperties) som alltid måste finnas
+// dessa måste alltså specificeras av globalDefaults
+type SignElementRequiredProperties = {
+    borderFeatures: {[key: string]: string;};
+    borderWidth: number[] | number;
+    padding: number[] | number;
+};
 
-    borderFeatures?: {[key: string]: string};
-    borderWidth?: number[] | number;
-    padding?: number[] | number;
+// properties som inte alltid finns i this.properties (dvs. aldrig obligatoriska)
+type SignElementOptionalProperties = {
+    alignContents: string;
+    alignContentsV: string;
+    blockDisplay: boolean;
+    dashedInset: boolean;
+    fillCorners: boolean;
+    grow: boolean;
+    passAnchor: boolean;
+    type: string; // symbol
+    value: string; // text, vagnr
+    variant: string; // symbol
 }
 
-type SignElementUserProperties = Partial<SignElementBaseProperties> & SignElementOptionalUserProperties;
+// properties som kan specificeras av användaren (inga är obligatoriska)
+type SignElementUserProperties = Partial<SignElementBaseProperties & SignElementRequiredProperties & SignElementOptionalProperties>;
 
 // formatet som this.properties följer
-export interface SignElementProperties extends SignElementOptionalUserProperties, SignElementBaseProperties{
+export interface SignElementProperties extends SignElementBaseProperties, SignElementRequiredProperties, Partial<SignElementOptionalProperties>{
     borderFeatures: {[key: string]: string};
     borderRadius: Vec4;
     borderWidth: Vec4;
     padding: Vec4;
 };
 
+export type SignElementAnchor = { x: string; } | { y: string; };
+
 type SignElementNode = {
-    anchor: {
-        x?: string;
-        y?: string;
-    };
+    anchor: SignElementAnchor;
     data: SignElementOptions;
 };
 
 // data som ges av användaren
 export type SignElementOptions = {
-    format?: number;
+    format?: number; // not currently used
     type: string;
-    properties?: any;
+    properties?: SignElementUserProperties;
     elements?: SignElementOptions[];
     nodes?: {[key: string]: SignElementNode};
     params?: any[];
 }
 
-export interface GenericDrawingContext{
+export type ConfigData = {
+    properties: {
+        globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
+        rootDefaults: SignElementBaseProperties & SignElementUserProperties;
+        defaults: {[key: string]: SignElementUserProperties};
+    },
+    signTypes: {
+        [key: string]: SignTypeDefinition;
+    },
+    symbols: {
+        [key: string]: SignSymbolDefinition;
+    },
+    borderFeatures: {
+        [key: string]: BorderFeatureDefinition;
+    },
+    templates: {
+        [key: string]: (...args: any[]) => SignElementOptions;
+    }
+};
+
+export type RenderingResult = {
+    flc: Vec4;
+    w: number;
+    h: number;
+    bs: Vec4;
+    doRender: (ctx: DrawingContext, x0: number, y0: number, dx: number, maxInnerHeight: number, verticalAlign?: string, iw?: number) => Promise<void>;
+};
+
+
+export interface DrawingContext{
     transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
 
     measureText(text: string): {width: number};
 
-    set fillStyle(x: string);
-    set strokeStyle(x: string);
+    set fillStyle(x: string | any);
+    set strokeStyle(x: string | any);
     set lineWidth(x: number);
 
     set font(x: string);
@@ -139,9 +146,13 @@ export interface GenericDrawingContext{
     fillRect(x: number, y: number, w: number, h: number): void;
     fillText(text: string, x: number, y: number): void;
 
-    drawImage(image: CanvasImageSource, dx: number, dy: number): void;
-    drawImage(image: CanvasImageSource, dx: number, dy: number, dw: number, dh: number): void;
-    drawImage(image: CanvasImageSource, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
+    drawImage(image: any, dx: number, dy: number): void;
+    drawImage(image: any, dx: number, dy: number, dw: number, dh: number): void;
+    drawImage(image: any, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
 }
 
-export type DrawingContext = CanvasRenderingContext2D | GenericDrawingContext;
+export type DrawingCanvas = {
+    getContext: (...s: any[]) => DrawingContext | null;
+}
+
+export interface Path2D{};
