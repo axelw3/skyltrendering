@@ -14,23 +14,24 @@
 <!--<rect x="0" y="0" width="6" height="12" fill="#000"/>-->
 
 <!-- fwd_left_right  -->
-<path d="M3,12v-8.5a1,1,0,1,0,-1,-1h-.2" stroke-width=".2" stroke="#fff" fill="none"/>
+<path d="M2.9,12v-8.6h.1a.9.9,0,1,0-.9-.9v.1h-.2v-.1a1.1,1.1,0,1,1,1.2,1.096v8.404z" fill="#fff"/>
 <use href="#arr_right"/>
 <use href="#arr_left"/>
 <use href="#arr_fwd"/>
 
 <!-- fwd_left  -->
-<path d="M3,24v-8.5a1,1,0,1,0,-1,-1h-.2" stroke-width=".2" stroke="#fff" fill="none"/>
+<path d="M2.9,24v-8.6h.1a.9.9,0,1,0-.9-.9v.1h-.2v-.1a1.1,1.1,0,1,1,1.2,1.096v8.404z" fill="#fff"/>
+<!--<path d="M3,24v-8.5a1,1,0,1,0,-1,-1h-.2" stroke-width=".2" stroke="#fff" fill="none"/>-->
 <use href="#arr_left" y="12"/>
 <use href="#arr_fwd" y="12"/>
 
 <!-- fwd_right  -->
-<path d="M3,36v-8.5a1,1,0,1,0,0,-2v-.2" stroke-width=".2" stroke="#fff" fill="none"/>
+<path d="M2.9,36v-8.6h.1a.9.9,0,0,0,0-1.8h-.1v-.2h.1a1.1,1.1,0,0,1,.1,2.1955v8.4045z" fill="#fff"/>
 <use href="#arr_right" y="24"/>
 <use href="#arr_fwd" y="24"/>
 
 <!-- left_right -->
-<path d="M3,48v-8.5a1,1,0,1,0,-1,-1h-.2" stroke-width=".2" stroke="#fff" fill="none"/>
+<path d="M2.9,48v-8.6h.1a.9.9,0,1,0-.9-.9v.1h-.2v-.1a1.1,1.1,0,1,1,1.2,1.096v8.404z" fill="#fff"/>
 <use href="#arr_right" y="36"/>
 <use href="#arr_left" y="36"/>
 
