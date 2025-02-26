@@ -1,4 +1,4 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea } from "./typedefs.js"
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference } from "./typedefs.js"
 import CONFIG from "./config.js";
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
@@ -175,6 +175,37 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 ctx.strokeStyle = [color, background][Math.abs(path.s)-1];
                 if(path.s > 0 || this.properties.fillCorners) ctx.stroke(p);
             }
+        });
+    }
+
+    private drawVec(ctx: T, href: string, components: string[], dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void>{
+        return this.getText(href).then(rawJson => {
+            let vecImgData = JSON.parse(rawJson) as JSONVec;
+            let ctx2: T = this.createCanvas(sw, sh);
+
+            let xf = vecImgData.width / vecImgData.vectorSize[0],
+                yf = vecImgData.height / vecImgData.vectorSize[1];
+
+            let tm: Vec6 = [
+                xf, 0, 0,
+                yf, 0, 0
+            ];
+
+            let els: JSONVecReference[] = vecImgData.core.concat(...components.map(name => vecImgData.components[name]));
+            els.forEach(el => {
+                let def = vecImgData.defs[el.use];
+
+                let tra = el.translate || [0, 0];
+
+                [tm[4], tm[5]] = [tra[0] * xf, tra[1] * yf];
+                tm[4] -= sx; tm[5] -= sy;
+
+                let path = ctx2.createPath2D(def.path, tm);
+                ctx2.fillStyle = def.fill;
+                ctx2.fill(path);
+            });
+
+            ctx.drawImage(ctx2, 0, 0, sw, sh, dx, dy, dw, dh);
         });
     }
 
@@ -493,8 +524,8 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                     (svgBox[3] - svgBox[2]) * t.height
                 ]; // [x0, y0, w, h]
 
-                return ctx.drawSVG(
-                    "svg/" + this.type.slice(1) + ".svg#" + keys.join("_"),
+                return this.drawVec(
+                    ctx, "res/" + this.type.slice(1) + ".json", keys,
                     x0 + this.properties.padding[0] - boundingBox[0] + crop[0], // dx
                     y0 + this.properties.padding[1] - boundingBox[2] + crop[1], // dy
                     crop[2], crop[3], // dw=sw, dh=sh
@@ -584,12 +615,10 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
     }
 
     public async render(): Promise<C>{
-        let canv = this.createCanvas();
-
         let r = this._render();
 
         let bs = r.bs;
-        Object.assign(canv, { width: r.w + bs[0] + bs[2], height: r.h + bs[1] + bs[3] });
+        let canv = this.createCanvas(r.w + bs[0] + bs[2], r.h + bs[1] + bs[3]);
 
         if(canv === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
 

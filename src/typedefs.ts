@@ -63,7 +63,7 @@ type SignElementOptionalProperties = {
     type: string; // symbol
     value: string; // text, vagnr
     variant: string; // symbol
-}
+};
 
 // properties som kan specificeras av användaren (inga är obligatoriska)
 type SignElementUserProperties = Partial<SignElementBaseProperties & SignElementRequiredProperties & SignElementOptionalProperties>;
@@ -128,15 +128,22 @@ export interface Path2D{
     closePath(): void;
 };
 
+type JSONVecElement = {path: string, fill: string};
+export type JSONVecReference = {use: string, translate?: [number, number]};
+
+export type JSONVec = {
+    width: number;
+    height: number;
+    vectorSize: [number, number];
+    defs: {[key: string]: JSONVecElement;};
+    core: JSONVecReference[];
+    components: {[key: string]: JSONVecReference[]};
+};
+
 export interface NewDrawingArea<T>{
     canv: T;
 
     createPath2D(s?: string, m?: Vec6): Path2D;
-
-    set width(x: number);
-    set height(x: number);
-
-    transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
 
     measureText(text: string): {width: number};
 
@@ -156,4 +163,4 @@ export interface NewDrawingArea<T>{
     drawImage(image: NewDrawingArea<T>, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
 
     drawSVG(url: string, dx: number, dy: number, dw: number, dh: number, sx?: number, sy?: number, sw?: number, sh?: number): Promise<void>;
-}
+};

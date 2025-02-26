@@ -18,18 +18,6 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
         return p;
     }
 
-    set width(x: number) {
-        this.canv.width = x;
-    }
-
-    set height(x: number) {
-        this.canv.height = x;
-    }
-
-    transform(a: number, b: number, c: number, d: number, e: number, f: number): void {
-        this.ctx.transform(a, b, c, d, e, f);
-    }
-
     measureText(text: string): { width: number; } {
         return this.ctx.measureText(text);
     }

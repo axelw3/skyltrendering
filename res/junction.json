@@ -1,0 +1,18 @@
+{
+    "width": 120,
+    "height": 240,
+    "vectorSize": [3, 6],
+    "defs": {
+        "pil": {"path": "M1.5,.2l.5.5a.1,.1,0,0,1,-.1,.1h-.3v.8h-.2v-.8h-.3a.1,.1,0,0,1,-.1,-.1z", "fill": "#fff"},
+        "hoger": {"path": "M1.5,1.5h.7v-.3a.1,.1,0,0,1,.1,-.1l.5,.5l-.5,.5a.1,.1,0,0,1,-.1,-.1v-.3h-.7z", "fill": "#fff"},
+        "vanster": {"path": "M1.5,1.5h-.7v-.3a.1,.1,0,0,0,-.1-.1l-.5,.5l.5,.5a.1,.1,0,0,0,.1-.1v-.3h.7z", "fill": "#fff"},
+        "linje": {"path": "M1.6,1.5v4.5h-.2v-4.5z", "fill": "#fff"}
+    },
+    "core": [{"use": "linje"}],
+    "components": {
+        "fwd": [{"use": "pil"}],
+        "left": [{"use": "vanster"}],
+        "right": [{"use": "hoger"}],
+        "lright": [{"use": "hoger", "translate":[0,1]}]
+    }
+}
