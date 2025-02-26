@@ -1,6 +1,6 @@
-import type { DrawingContext, Vec4, Vec2 } from "./typedefs.js";
+import type { Vec4, Vec2, NewDrawingArea } from "./typedefs.js";
 
-export function roundedFrame(ctx: DrawingContext, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], color: string = "#000", borderRadius: Vec4 = [0, 0, 0, 0], lineDash: Vec2 = [1, 0]){
+export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], color: string = "#000", borderRadius: Vec4 = [0, 0, 0, 0], lineDash: Vec2 = [1, 0]){
     // lineDash = [längd, mellanrum]
 
     if(Math.max(...nominalLineWidth) <= 0) return;
@@ -21,18 +21,18 @@ export function roundedFrame(ctx: DrawingContext, x0: number, y0: number, innerW
         let v1 = startAngle - signX*signY*Math.PI/4,
             v2 = startAngle + signX*signY*Math.PI/4;
 
-        ctx.beginPath();
+        let p = ctx.createPath2D();
         //ctx.moveTo(cx + signX * arx, cy);
-        ctx.moveTo(cx + signX*(arx+w0), cy);
-        ctx.lineTo(cx + signX*(arx+w0), cy + signY * Math.max(0, w1 - br));
-        ctx.ellipse(cx + signX*Math.max(0, w0 - br), cy + signY * Math.max(0, w1 - br), br, br, 0, v1, v2, signX !== signY);
-        ctx.lineTo(cx, cy + signY*(ary+w1));
-        ctx.lineTo(cx, cy + signY*ary);
-        ctx.ellipse(cx, cy, arx, ary, 0, v2, v1, signX === signY);
+        p.moveTo(cx + signX*(arx+w0), cy);
+        p.lineTo(cx + signX*(arx+w0), cy + signY * Math.max(0, w1 - br));
+        p.ellipse(cx + signX*Math.max(0, w0 - br), cy + signY * Math.max(0, w1 - br), br, br, 0, v1, v2, signX !== signY);
+        p.lineTo(cx, cy + signY*(ary+w1));
+        p.lineTo(cx, cy + signY*ary);
+        p.ellipse(cx, cy, arx, ary, 0, v2, v1, signX === signY);
         //ctx.closePath();
 
         ctx.fillStyle = color;
-        ctx.fill();
+        ctx.fill(p);
     };
 
     drawCorner(x0, y0, -1, -1, 0);
@@ -86,7 +86,7 @@ export function roundedFrame(ctx: DrawingContext, x0: number, y0: number, innerW
 }
 
 
-export function roundedFill(ctx: DrawingContext, x0: number, y0: number, innerWidth: number, innerHeight: number, borderWidth: Vec4 = [4, 4, 4, 4], borderRadius: Vec4 = [0, 0, 0, 0], background: string = "#fff", fillCorners: boolean = false){
+export function roundedFill<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, innerWidth: number, innerHeight: number, borderWidth: Vec4 = [4, 4, 4, 4], borderRadius: Vec4 = [0, 0, 0, 0], background: string = "#fff", fillCorners: boolean = false){
     // lineDash = [längd, mellanrum]
 
     ctx.fillStyle = background;
@@ -96,12 +96,14 @@ export function roundedFill(ctx: DrawingContext, x0: number, y0: number, innerWi
         return;
     }
 
+    let p = ctx.createPath2D();
+
     let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number) => {
         let arx = borderRadius[i] + borderWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
             ary = borderRadius[i] + borderWidth[Math.floor(i / 2) * 2 + 1] / 2;
 
         let startAngle = ((i - 2) * Math.PI) / 2;
-        ctx.ellipse(
+        p.ellipse(
             cx - signX * borderRadius[i], cy - signY * borderRadius[i],
             arx, ary,
             0,
@@ -110,12 +112,12 @@ export function roundedFill(ctx: DrawingContext, x0: number, y0: number, innerWi
         );
     };
 
-    ctx.beginPath();
     drawCorner(x0, y0, -1, -1, 0);
     drawCorner(x0 + innerWidth, y0, 1, -1, 1);
     drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2);
     drawCorner(x0, y0 + innerHeight, -1, 1, 3);
-    ctx.fill();
+
+    ctx.fill(p);
 
     // mitten
     ctx.fillRect(

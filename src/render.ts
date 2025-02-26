@@ -1,7 +1,7 @@
-import type {MathEnv, Vec4, SignElementProperties, DrawingContext, SignElementOptions, SignElementBaseProperties, RenderingResult, DrawingCanvas, Vec6, Path2D} from "./typedefs.js"
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea } from "./typedefs.js"
 import CONFIG from "./config.js";
-import {roundedFill, roundedFrame} from "./graphics.js";
-import {mathEval, parseVarStr, getText} from "./utils.js";
+import { roundedFill, roundedFrame } from "./graphics.js";
+import { mathEval, parseVarStr } from "./utils.js";
 
 // Priority:
 // 1. Specified value
@@ -81,9 +81,9 @@ class BorderDimensions{
     }
 }
 
-export abstract class SignElement<T extends DrawingCanvas>{
-    protected abstract _createCanvas(w?: number, h?: number): T;
-    protected abstract _createPath2D(s: string, m?: Vec6): Path2D;
+export abstract class SignElement<C, T extends NewDrawingArea<C>>{
+    protected abstract createCanvas(w?: number, h?: number): T;
+    protected abstract getText(url: string): Promise<string>;
 
     private static borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
         let bs = new BorderDimensions(properties.borderWidth);
@@ -115,7 +115,7 @@ export abstract class SignElement<T extends DrawingCanvas>{
         }
     }
 
-    private renderBorderFeature(ctx: DrawingContext, x0: number, y0: number, featureName: string, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number){
+    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, featureName: string, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number){
         let color = this.properties.color,
             background = this.properties.background;
 
@@ -164,7 +164,7 @@ export abstract class SignElement<T extends DrawingCanvas>{
         ctx.lineWidth = bw;
 
         feature.paths.forEach(path => {
-            let p = this._createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
+            let p = ctx.createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
 
             if(path.f !== undefined){
                 ctx.fillStyle = [color, background][Math.abs(path.f)-1];
@@ -180,8 +180,8 @@ export abstract class SignElement<T extends DrawingCanvas>{
 
     private type: string;
     private properties: SignElementProperties;
-    private children: SignElement<T>[];
-    private nodes: {[key: string]: {signelement: SignElement<T>, anchor: {x?: string, y?: string}}};
+    private children: SignElement<C, T>[];
+    private nodes: {[key: string]: {signelement: SignElement<C, T>, anchor: {x?: string, y?: string}}};
 
     protected static resolveTemplate(data: SignElementOptions): SignElementOptions{
         while(data.type.startsWith("#")){
@@ -220,7 +220,7 @@ export abstract class SignElement<T extends DrawingCanvas>{
         this.nodes = {};
     }
 
-    protected addCN<X extends SignElement<T>>(Cl: new (opt: any, inh: SignElementBaseProperties | null) => X, data: SignElementOptions){
+    protected addCN<X extends SignElement<C, T>>(Cl: new (opt: any, inh: SignElementBaseProperties | null) => X, data: SignElementOptions){
         let inh = this.getInhProperties();
 
         this.children = (data.elements || []).map(element => new Cl(element, inh));
@@ -238,13 +238,13 @@ export abstract class SignElement<T extends DrawingCanvas>{
         return { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing };
     }
 
-    private _render(): RenderingResult{
+    private _render(): RenderingResult<C, T>{
         let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         let padding = Array.from(this.properties.padding);
 
         let width = 0, height = 0, maxHeight = 0;
-        let renderPromise: (ctx: DrawingContext, x0: number, y0: number, maxInnerHeight: number) => Promise<void>
+        let renderPromise: (ctx: T, x0: number, y0: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
         if(this.type == "skylt"){
@@ -336,7 +336,7 @@ export abstract class SignElement<T extends DrawingCanvas>{
                 );
             })).then(() => {});
         }else if(this.type == "vagnr" || this.type == "text"){
-            let ctx_temp = this._createCanvas().getContext("2d") as DrawingContext;
+            let ctx_temp = this.createCanvas();
 
             ctx_temp.font = "32px " + this.properties.font;
 
@@ -372,28 +372,18 @@ export abstract class SignElement<T extends DrawingCanvas>{
             width = symbolType.width;
             [height, maxHeight] = symbolType.height;
 
-            let img = new Image(width, maxHeight);
-
             renderPromise = (ctx, x0, y0, maxInnerHeight) => new Promise((res, rej) => {
-                img.addEventListener("load", () => {
-                    ctx.drawImage(
-                        img,
-                        0, 0,
-                        img.width, maxInnerHeight - padding[1] - padding[3],
-                        x0 + padding[0], y0 + padding[1],
-                        img.width, maxInnerHeight - padding[1] - padding[3]
+                let url = "svg/symbol/" + (this.properties.type || "") + ".svg";
+
+                this.getText(url).then(xml => {
+                    return ctx.drawSVG(
+                        "data:image/svg+xml;utf8,"
+                            + encodeURIComponent(xml.replace(/currentColor/g, this.properties.color))
+                            + "#" + encodeURIComponent(this.properties.variant || symbolType.default),
+                        x0 + padding[0], y0 + padding[1], // dx, dy
+                        width, maxInnerHeight - padding[1] - padding[3] // dw=sw, dh=sh
                     );
-                    res();
-                });
-                img.addEventListener("error", rej);
-
-                let url = "svg/symbol/" + window.encodeURIComponent(this.properties.type || "") + ".svg";
-
-                getText(url).then(xml => {
-                    img.src = "data:image/svg+xml;utf8,"
-                        + window.encodeURIComponent(String(xml).replace(/currentColor/g, this.properties.color))
-                        + "#" + window.encodeURIComponent(this.properties.variant || symbolType.default);
-                });
+                }).then(res, rej);
             });
         }else if(this.type == "newline"){
             width = 0;
@@ -401,8 +391,6 @@ export abstract class SignElement<T extends DrawingCanvas>{
         }else if(this.type.startsWith(".")){
             let t = SKYLTTYPER[this.type.slice(1)];
             let keys = Object.keys(t.nodes).sort().filter(nodeName => !!this.nodes[nodeName]);
-
-            let svg = new Image(t.width, t.height);
 
             let svgBox = Array.from(t.core);
             keys.forEach(nodeName => {
@@ -505,25 +493,13 @@ export abstract class SignElement<T extends DrawingCanvas>{
                     (svgBox[3] - svgBox[2]) * t.height
                 ]; // [x0, y0, w, h]
 
-                return new Promise((resolve, reject) => {
-                    svg.onload = resolve;
-                    svg.onerror = reject;
-                    svg.src = "svg/" + this.type.slice(1) + ".svg#" + keys.join("_");
-                }).then(() => {
-                    let svgRasterized = this._createCanvas(t.width, t.height);
-                    (svgRasterized.getContext("2d") as DrawingContext).drawImage(svg, 0, 0, t.width, t.height);
-
-                    ctx.drawImage(
-                        svgRasterized,
-                        crop[0], crop[1], // sx, sy
-                        crop[2], crop[3], // sw, sh
-                        x0 + this.properties.padding[0] - boundingBox[0] + crop[0], // dx
-                        y0 + this.properties.padding[1] - boundingBox[2] + crop[1], // dy
-                        crop[2], crop[3] // dw, dh
-                    );
-
-                    return;
-                });
+                return ctx.drawSVG(
+                    "svg/" + this.type.slice(1) + ".svg#" + keys.join("_"),
+                    x0 + this.properties.padding[0] - boundingBox[0] + crop[0], // dx
+                    y0 + this.properties.padding[1] - boundingBox[2] + crop[1], // dy
+                    crop[2], crop[3], // dw=sw, dh=sh
+                    crop[0], crop[1] // sx, sy
+                );
             });
         }else{
             alert("Fel!");
@@ -547,7 +523,7 @@ export abstract class SignElement<T extends DrawingCanvas>{
             w: width + padding[0] + padding[2],
             h: height + padding[1] + padding[3],
             bs: bs.h,
-            doRender: async (ctx: DrawingContext, x0: number, y0: number, dx: number, maxInnerHeight, verticalAlign?: string, iw = 0) => {
+            doRender: async (ctx: T, x0: number, y0: number, dx: number, maxInnerHeight: number, verticalAlign?: string, iw = 0) => {
                 const dy = 0;
                 const innerWidth = iw === 0 ? (width + padding[0] + padding[2]) : iw;
                 let innerHeight = height + padding[1] + padding[3];
@@ -607,17 +583,17 @@ export abstract class SignElement<T extends DrawingCanvas>{
         };
     }
 
-    public render(): Promise<T>{
-        let canv = this._createCanvas();
+    public async render(): Promise<C>{
+        let canv = this.createCanvas();
 
         let r = this._render();
 
         let bs = r.bs;
         Object.assign(canv, { width: r.w + bs[0] + bs[2], height: r.h + bs[1] + bs[3] });
 
-        let ctx = canv.getContext("2d");
-        if(ctx === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
+        if(canv === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
 
-        return r.doRender(ctx, 0, 0, 0, r.h).then(() => canv);
+        await r.doRender(canv, 0, 0, 0, r.h);
+        return canv.canv;
     }
 }

@@ -113,46 +113,47 @@ export type ConfigData = {
     }
 };
 
-export type RenderingResult = {
+export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     flc: Vec4;
     w: number;
     h: number;
     bs: Vec4;
-    doRender: (ctx: DrawingContext, x0: number, y0: number, dx: number, maxInnerHeight: number, verticalAlign?: string, iw?: number) => Promise<void>;
+    doRender: (ctx: T, x0: number, y0: number, dx: number, maxInnerHeight: number, verticalAlign?: string, iw?: number) => Promise<void>;
 };
 
+export interface Path2D{
+    moveTo(x: number, y: number): void;
+    lineTo(x: number, y: number): void;
+    ellipse(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, counterclockwise: boolean): void;
+    closePath(): void;
+};
 
-export interface DrawingContext{
+export interface NewDrawingArea<T>{
+    canv: T;
+
+    createPath2D(s?: string, m?: Vec6): Path2D;
+
+    set width(x: number);
+    set height(x: number);
+
     transform(a: number, b: number, c: number, d: number, e: number, f: number): void;
 
     measureText(text: string): {width: number};
 
-    set fillStyle(x: string | any);
-    set strokeStyle(x: string | any);
+    set fillStyle(x: string);
+    set strokeStyle(x: string);
     set lineWidth(x: number);
 
     set font(x: string);
     set textBaseline(x: string);
 
-    beginPath(): void;
-    moveTo(x: number, y: number): void;
-    lineTo(x: number, y: number): void;
-    ellipse(x: number, y: number, radiusX: number, radiusY: number, rotation: number, startAngle: number, endAngle: number, counterclockwise: boolean): void;
-
-    fill(): void;
     fill(path: Path2D): void;
     stroke(path: Path2D): void;
 
     fillRect(x: number, y: number, w: number, h: number): void;
     fillText(text: string, x: number, y: number): void;
 
-    drawImage(image: any, dx: number, dy: number): void;
-    drawImage(image: any, dx: number, dy: number, dw: number, dh: number): void;
-    drawImage(image: any, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
-}
+    drawImage(image: NewDrawingArea<T>, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
 
-export type DrawingCanvas = {
-    getContext: (...s: any[]) => DrawingContext | null;
+    drawSVG(url: string, dx: number, dy: number, dw: number, dh: number, sx?: number, sy?: number, sw?: number, sh?: number): Promise<void>;
 }
-
-export interface Path2D{};

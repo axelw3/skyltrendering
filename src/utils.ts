@@ -84,14 +84,3 @@ export function parseVarStr(str: string, vars = {}): string{
 
     return result.join("") + str.substring(i);
 }
-
-export function getText(url: string): Promise<string>{
-    return new Promise(resolve => {
-        let req = new XMLHttpRequest();
-        req.addEventListener("load", () => {
-            resolve(req.responseText);
-        });
-        req.open("GET", url);
-        req.send();
-    });
-}
