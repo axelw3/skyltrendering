@@ -29,7 +29,7 @@ type SignTypeDefinition = {
 type SignSymbolDefinition = {
     width: number;
     height: number[];
-    default: string;
+    default?: string;
 };
 
 // properties som ärvs (måste därför specificeras av rootDefaults)
@@ -129,15 +129,15 @@ export interface Path2D{
 };
 
 type JSONVecElement = {path: string, fill: string};
-export type JSONVecReference = {use: string, translate?: [number, number]};
+export type JSONVecReference = {use: number, translate?: [number, number]};
 
 export type JSONVec = {
     width: number;
     height: number;
     vectorSize: [number, number];
-    defs: {[key: string]: JSONVecElement;};
-    core: JSONVecReference[];
-    components: {[key: string]: JSONVecReference[]};
+    defs: JSONVecElement[];
+    core?: JSONVecReference[];
+    components?: {[key: string]: JSONVecReference[]};
 };
 
 export interface NewDrawingArea<T>{
@@ -160,7 +160,5 @@ export interface NewDrawingArea<T>{
     fillRect(x: number, y: number, w: number, h: number): void;
     fillText(text: string, x: number, y: number): void;
 
-    drawImage(image: NewDrawingArea<T>, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void;
-
-    drawSVG(url: string, dx: number, dy: number, dw: number, dh: number, sx?: number, sy?: number, sw?: number, sh?: number): Promise<void>;
+    drawImage(image: NewDrawingArea<T>, dx: number, dy: number): void;
 };

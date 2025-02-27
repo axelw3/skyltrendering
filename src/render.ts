@@ -178,34 +178,45 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
         });
     }
 
-    private drawVec(ctx: T, href: string, components: string[], dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void>{
+    private drawVec(ctx: T, href: string, currentColor: string, components: string[], dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void>{
         return this.getText(href).then(rawJson => {
             let vecImgData = JSON.parse(rawJson) as JSONVec;
-            let ctx2: T = this.createCanvas(sw, sh);
+            let ctx2: T = this.createCanvas(dw, dh);
 
-            let xf = vecImgData.width / vecImgData.vectorSize[0],
-                yf = vecImgData.height / vecImgData.vectorSize[1];
+            let xf = (dw/sw) * vecImgData.width / vecImgData.vectorSize[0],
+                yf = (dh/sh) * vecImgData.height / vecImgData.vectorSize[1];
 
             let tm: Vec6 = [
                 xf, 0, 0,
                 yf, 0, 0
             ];
 
-            let els: JSONVecReference[] = vecImgData.core.concat(...components.map(name => vecImgData.components[name]));
+            let els: JSONVecReference[];
+            if(vecImgData.components !== undefined){
+                els = vecImgData.core || [];
+                Object.entries(vecImgData.components).filter(e => components.includes(e[0])).forEach(e => els.push(...e[1]));
+            }else{
+                els = vecImgData.defs.map(function(_: any, i: number): JSONVecReference{
+                    return {use: i};
+                });
+            }
+
             els.forEach(el => {
                 let def = vecImgData.defs[el.use];
 
                 let tra = el.translate || [0, 0];
 
                 [tm[4], tm[5]] = [tra[0] * xf, tra[1] * yf];
-                tm[4] -= sx; tm[5] -= sy;
+
+                tm[4] -= sx * dw/sw;
+                tm[5] -= sy * dh/sh;
 
                 let path = ctx2.createPath2D(def.path, tm);
-                ctx2.fillStyle = def.fill;
+                ctx2.fillStyle = def.fill === "currentColor" ? currentColor : def.fill;
                 ctx2.fill(path);
             });
 
-            ctx.drawImage(ctx2, 0, 0, sw, sh, dx, dy, dw, dh);
+            ctx.drawImage(ctx2, dx, dy);
         });
     }
 
@@ -278,14 +289,14 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
         let renderPromise: (ctx: T, x0: number, y0: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
-        if(this.type == "skylt"){
+        if(this.type === "skylt"){
             let w = [0], h = [0], j = 0;
 
             let totalLineSpacing = 0;
 
             let ch = this.children.map((c, i) => {
                 let re = c._render();
-                let c2 = { isn: c.type == "newline", r: re, bs: re.bs, row: j, x: 0 };
+                let c2 = { isn: c.type === "newline", r: re, bs: re.bs, row: j, x: 0 };
 
                 if(c2.isn || (i > 0 && this.properties.blockDisplay)){
                     c2.row = ++j;
@@ -366,7 +377,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                     iw
                 );
             })).then(() => {});
-        }else if(this.type == "vagnr" || this.type == "text"){
+        }else if(this.type === "vagnr" || this.type === "text"){
             let ctx_temp = this.createCanvas();
 
             ctx_temp.font = "32px " + this.properties.font;
@@ -397,26 +408,21 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
                 res();
             });
-        }else if(this.type == "symbol"){
+        }else if(this.type === "symbol"){
             let symbolType = SYMBOLER[this.properties.type || ""];
 
             width = symbolType.width;
             [height, maxHeight] = symbolType.height;
 
-            renderPromise = (ctx, x0, y0, maxInnerHeight) => new Promise((res, rej) => {
-                let url = "svg/symbol/" + (this.properties.type || "") + ".svg";
+            let url = "res/symbol/" + (this.properties.type || "") + ".json";
+            let v: string | undefined = this.properties.variant || symbolType.default;
 
-                this.getText(url).then(xml => {
-                    return ctx.drawSVG(
-                        "data:image/svg+xml;utf8,"
-                            + encodeURIComponent(xml.replace(/currentColor/g, this.properties.color))
-                            + "#" + encodeURIComponent(this.properties.variant || symbolType.default),
-                        x0 + padding[0], y0 + padding[1], // dx, dy
-                        width, maxInnerHeight - padding[1] - padding[3] // dw=sw, dh=sh
-                    );
-                }).then(res, rej);
-            });
-        }else if(this.type == "newline"){
+            renderPromise = (ctx, x0, y0, maxInnerHeight) => this.drawVec(
+                ctx, url, this.properties.color, v === undefined ? [] : [v],
+                x0 + padding[0], y0 + padding[1], // dx, dy
+                width, maxInnerHeight - padding[1] - padding[3] // dw=sw, dh=sh
+            );
+        }else if(this.type === "newline"){
             width = 0;
             height = 0;
         }else if(this.type.startsWith(".")){
@@ -510,7 +516,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
                 return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, res.renderPromise.h, this.properties.alignContentsV);
             })).then(() => {
-                if(t.width == 0 || t.height == 0) return;
+                if(t.width === 0 || t.height === 0) return;
 
                 svgBox[0] = Math.min(1, Math.max(0, boundingBox[0] / t.width));
                 svgBox[1] = Math.max(0, Math.min(1, boundingBox[1] / t.width));
@@ -525,7 +531,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 ]; // [x0, y0, w, h]
 
                 return this.drawVec(
-                    ctx, "res/" + this.type.slice(1) + ".json", keys,
+                    ctx, "res/" + this.type.slice(1) + ".json", this.properties.color, keys,
                     x0 + this.properties.padding[0] - boundingBox[0] + crop[0], // dx
                     y0 + this.properties.padding[1] - boundingBox[2] + crop[1], // dy
                     crop[2], crop[3], // dw=sw, dh=sh

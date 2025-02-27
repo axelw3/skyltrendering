@@ -1,7 +1,7 @@
 import { SignElement as _SignElement } from "./render.js";
 import { SignElementBaseProperties, SignElementOptions, Vec6, NewDrawingArea, Path2D as _Path2D } from "./typedefs.js";
 
-import { createCanvas, Canvas, Path2D, SKRSContext2D, Image } from "@napi-rs/canvas";
+import { createCanvas, Canvas, Path2D, SKRSContext2D } from "@napi-rs/canvas";
 import { readFile } from "fs/promises"
 
 class NodeDrawingArea implements NewDrawingArea<Canvas>{
@@ -60,22 +60,8 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
         this.ctx.fillText(text, x, y);
     }
 
-    drawImage(image: NewDrawingArea<Canvas>, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void {
-        this.ctx.drawImage(image.canv, sx, sy, sw, sh, dx, dy, dw, dh);
-    }
-
-    drawSVG(url: string, dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void> {
-        return new Promise((res, rej) => {
-            let img = new Image();
-
-            img.onload = () => {
-                this.ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-                res();
-            };
-
-            img.onerror = rej;
-            img.src = url;
-        });
+    drawImage(image: NewDrawingArea<Canvas>, dx: number, dy: number): void {
+        this.ctx.drawImage(image.canv, dx, dy);
     }
 }
 

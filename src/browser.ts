@@ -58,22 +58,8 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
         this.ctx.fillText(text, x, y);
     }
 
-    drawImage(image: NewDrawingArea<HTMLCanvasElement>, sx: number, sy: number, sw: number, sh: number, dx: number, dy: number, dw: number, dh: number): void {
-        this.ctx.drawImage(image.canv, sx, sy, sw, sh, dx, dy, dw, dh);
-    }
-
-    drawSVG(url: string, dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void> {
-        return new Promise((res, rej) => {
-            let img = new Image();
-
-            img.addEventListener("load", () => {
-                this.ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
-                res();
-            });
-
-            img.addEventListener("error", rej);
-            img.src = url;
-        });
+    drawImage(image: NewDrawingArea<HTMLCanvasElement>, dx: number, dy: number): void {
+        this.ctx.drawImage(image.canv, dx, dy);
     }
 }
 
