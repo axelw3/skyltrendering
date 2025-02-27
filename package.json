@@ -2,14 +2,13 @@
     "name": "skyltrendering",
     "version": "1.0.0",
     "description": "",
-    "main": "dist/main.js",
-    "browser": "index.esm.js",
+    "main": "dist/node/main.js",
+    "browser": "dist/browser/index.esm.js",
     "scripts": {
         "clean": "node ./utils/clean.js ./dist/",
-        "install": "npm run build",
-        "build": "npm run clean && npm run build-node && npm run build-web",
-        "build-node": "tsc",
-        "build-web": "esbuild ./src/browser.ts --format=esm --bundle --outfile=./index.esm.js"
+        "build": "npm run clean && npm run build:node && npm run build:esm",
+        "build:node": "tsc",
+        "build:esm": "esbuild ./src/browser.ts --format=esm --bundle --outfile=./dist/browser/index.esm.js"
     },
     "author": "axelw3",
     "license": "AGPL-3.0-or-later",

@@ -11,7 +11,7 @@
 
         /* Emit */
         "declaration": true,
-        "outDir": "./dist",
+        "outDir": "./dist/node",
         "removeComments": true,
 
         /* Interop Constraints */

@@ -6,12 +6,24 @@
         fs.rmSync(path);
     }
 
-    process.argv.slice(2).map(x => {
-        let s = fs.statSync(x, {throwIfNoEntry: false});
-        if(s === undefined) return;
+    function rmDirectory(path, rmSelf = true){
+        fs.readdirSync(path, {recursive: false, withFileTypes: true}).map(y => {
+            if(y.isFile()){
+                rmFile(path + y.name);
+            }else if(y.isDirectory()){
+                rmDirectory(path + y.name + "/");
+            }
+        });
 
-        if(s.isDirectory()){
-            fs.readdirSync(x, {recursive: false, withFileTypes: true}).filter(y => y.isFile()).map(y => rmFile(x + y.name));
+        if(!rmSelf) return;
+
+        console.log("rmdir " + path);
+        fs.rmdirSync(path);
+    }
+
+    process.argv.slice(2).map(x => {
+        if(x.endsWith("/")){
+            rmDirectory(x, false);
         }else{
             rmFile(x);
         }
