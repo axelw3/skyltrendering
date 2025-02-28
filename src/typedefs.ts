@@ -87,7 +87,7 @@ type SignElementAnchor = {
 };
 
 type SignElementNode = {
-    anchor: SignElementAnchor;
+    anchor?: SignElementAnchor;
     data: SignElementOptions;
 };
 

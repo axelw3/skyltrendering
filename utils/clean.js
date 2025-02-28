@@ -22,6 +22,7 @@
     }
 
     process.argv.slice(2).map(x => {
+        if(!fs.existsSync(x)) return;
         if(x.endsWith("/")){
             rmDirectory(x, false);
         }else{

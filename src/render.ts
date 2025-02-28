@@ -234,7 +234,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         return opt;
     }
 
-    protected constructor(config: UserConfigData){
+    public constructor(config: UserConfigData){
         this.conf = {
             properties: Object.assign({}, propertiesDefaults, config.properties),
             signTypes: config.signTypes ?? {},
@@ -437,8 +437,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 let tn = t.nodes[nodeName];
 
-                let ax = n.anchor.x ?? tn.ax,
-                    ay = n.anchor.y ?? tn.ay;
+                let ax = n.anchor?.x ?? tn.ax,
+                    ay = n.anchor?.y ?? tn.ay;
 
                 let result = this._render(s, SignRenderer.getInhProperties(prop));
                 let bs = result.bs;
