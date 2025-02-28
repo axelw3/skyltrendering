@@ -1,27 +1,25 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference } from "./typedefs.js"
-import CONFIG from "./config.js";
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 
-// Priority:
-// 1. Specified value
-// 2. Value from parent (if property is inherited) or DEFAULTS (if root)
-// 3. Default value (from DEFAULT_PROPERTIES)
-// 4. Global defaults (GLOBAL_DEFAULTS)
+const propertiesDefaults: PropertiesDefaults = {
+    "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
+    "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "font": "sans-serif", "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
+    "defaults": {
+        ".": { "borderWidth": 4, "padding": 8 },
+        "skylt": { "padding": 6, "blockDisplay": false, "passAnchor": false, "alignContentsV": "middle" },
+        "vagnr": { "value": "123", "borderWidth": 3, "borderRadius": 7, "dashedInset": false, "padding": [14, 2] },
+        "text": { "value": "Text" },
+        "newline": {},
+        "symbol": { "padding": 5, "type": "default", "grow": true }
+    }
+};
 
-const GLOBAL_DEFAULTS = CONFIG.properties.globalDefaults;
-const DEFAULTS = CONFIG.properties.rootDefaults;
-const DEFAULT_PROPERTIES = CONFIG.properties.defaults;
-
-const SKYLTTYPER = CONFIG.signTypes;
-const SYMBOLER = CONFIG.symbols;
-
-// Samtliga designer sparas i "nedre kant"-form, dvs.
-// i en orientering motsvarande klammern i skylt
-// F9 (samlingsmärke för vägvisning).
-const BORDER_FEATURES = CONFIG.borderFeatures;
-
-const TEMPLATES = CONFIG.templates;
+// Bestämning av värde på elementegenskaper görs enligt följande prioriteringsordning:
+// 1. Specificerat värde
+// 2. Värde från förälder (om egenskapen kan ärvas) eller från rootDefaults (endast rotelement)
+// 3. Typspecifikt standardvärde (från defaults)
+// 4. Globalt standardvärde (från globalDefaults)
 
 function to4EForm(data: number[] | number): Vec4{
     if(!Array.isArray(data)) data = [ data, data ];
@@ -33,29 +31,26 @@ class BorderElement{
     env: MathEnv;
     w: number;
     h: number;
-    n: string;
 
-    constructor(featureName: string, bw: number, brA: number, brB: number, sideLength: number){
-        let w0 = BORDER_FEATURES[featureName].w,
-            cvr = !!BORDER_FEATURES[featureName].cover;
+    constructor(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, sideLength: number){
+        let w0 = feature.w,
+            cvr = !!feature.cover;
 
         if(cvr) w0 = sideLength - bw;
 
-        this.env = BorderElement.calculateEnv(featureName, bw, brA, brB, w0);
+        this.env = BorderElement.calculateEnv(feature, bw, brA, brB, w0);
 
-        let h0 = mathEval(BORDER_FEATURES[featureName].h, this.env);
+        let h0 = mathEval(feature.h, this.env);
 
         this.env["h"] = h0;
 
         this.w = w0 + bw;
         this.h = h0 + bw;
-        this.n = featureName;
     }
 
-    static calculateEnv(featureName: string, bw: number, brA: number, brB: number, w0: number): MathEnv{
+    static calculateEnv(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, w0: number): MathEnv{
         let env: MathEnv = {bra: brA, brb: brB, bw: bw, w: w0};
 
-        let feature = BORDER_FEATURES[featureName];
         if(!Array.isArray(feature.vars)) return env;
 
         for(let i = 0; i < feature.vars.length; i++){
@@ -81,24 +76,25 @@ class BorderDimensions{
     }
 }
 
-export abstract class SignElement<C, T extends NewDrawingArea<C>>{
+export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     protected abstract createCanvas(w?: number, h?: number): T;
     protected abstract getText(url: string): Promise<string>;
 
-    private static borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
-        let bs = new BorderDimensions(properties.borderWidth);
+    private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
+        let bs = new BorderDimensions(properties.borderWidth),
+            bf = properties.borderFeatures;
 
-        if(properties.borderFeatures["left"] !== undefined)
-            bs.set(0, new BorderElement(properties.borderFeatures["left"], properties.borderWidth[0], properties.borderRadius[0], properties.borderRadius[3], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+        if(bf["left"] !== undefined)
+            bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], properties.borderWidth[0], properties.borderRadius[0], properties.borderRadius[3], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
 
-        if(properties.borderFeatures["right"] !== undefined)
-            bs.set(2, new BorderElement(properties.borderFeatures["right"], properties.borderWidth[2], properties.borderRadius[2], properties.borderRadius[1], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+        if(bf["right"] !== undefined)
+            bs.set(2, new BorderElement(this.conf.borderFeatures[bf["right"]], properties.borderWidth[2], properties.borderRadius[2], properties.borderRadius[1], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
 
-        if(properties.borderFeatures["top"] !== undefined)
-            bs.set(1, new BorderElement(properties.borderFeatures["top"], properties.borderWidth[1], properties.borderRadius[1], properties.borderRadius[0], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+        if(bf["top"] !== undefined)
+            bs.set(1, new BorderElement(this.conf.borderFeatures[bf["top"]], properties.borderWidth[1], properties.borderRadius[1], properties.borderRadius[0], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
 
-        if(properties.borderFeatures["bottom"] !== undefined)
-            bs.set(3, new BorderElement(properties.borderFeatures["bottom"], properties.borderWidth[3], properties.borderRadius[3], properties.borderRadius[2], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+        if(bf["bottom"] !== undefined)
+            bs.set(3, new BorderElement(this.conf.borderFeatures[bf["bottom"]], properties.borderWidth[3], properties.borderRadius[3], properties.borderRadius[2], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
 
         return bs;
     }
@@ -115,17 +111,15 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
         }
     }
 
-    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, featureName: string, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number){
-        let color = this.properties.color,
-            background = this.properties.background;
+    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, feature: BorderFeatureDefinition, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number, prop: SignElementProperties){
+        let color = prop.color,
+            background = prop.background;
 
         let lr = (side === "left" || side === "right");
         let bri = lr ? (side === "left" ? 0 : 2) : (side === "top" ? 1 : 3);
 
-        let bw = this.properties.borderWidth[bri];
-        let s = [bs.el[bri]?.w || 0, bs.h[bri]];
-
-        let feature = BORDER_FEATURES[featureName];
+        let bw = prop.borderWidth[bri];
+        let s = [bs.el[bri]?.w ?? 0, bs.h[bri]];
 
         let w = lr ? s[1] : s[0],
             h = lr ? s[0] : s[1];
@@ -168,12 +162,12 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
             if(path.f !== undefined){
                 ctx.fillStyle = [color, background][Math.abs(path.f)-1];
-                if(path.f > 0 || this.properties.fillCorners) ctx.fill(p);
+                if(path.f > 0 || prop.fillCorners) ctx.fill(p);
             }
 
             if(path.s !== undefined){
                 ctx.strokeStyle = [color, background][Math.abs(path.s)-1];
-                if(path.s > 0 || this.properties.fillCorners) ctx.stroke(p);
+                if(path.s > 0 || prop.fillCorners) ctx.stroke(p);
             }
         });
     }
@@ -193,7 +187,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
             let els: JSONVecReference[];
             if(vecImgData.components !== undefined){
-                els = vecImgData.core || [];
+                els = vecImgData.core ?? [];
                 Object.entries(vecImgData.components).filter(e => components.includes(e[0])).forEach(e => els.push(...e[1]));
             }else{
                 els = vecImgData.defs.map(function(_: any, i: number): JSONVecReference{
@@ -204,7 +198,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
             els.forEach(el => {
                 let def = vecImgData.defs[el.use];
 
-                let tra = el.translate || [0, 0];
+                let tra = el.translate ?? [0, 0];
 
                 [tm[4], tm[5]] = [tra[0] * xf, tra[1] * yf];
 
@@ -220,94 +214,85 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
         });
     }
 
-    private type: string;
-    private properties: SignElementProperties;
-    private children: SignElement<C, T>[];
-    private nodes: {[key: string]: {signelement: SignElement<C, T>, anchor: {x?: string, y?: string}}};
+    private conf: ConfigData;
 
-    protected static resolveTemplate(data: SignElementOptions): SignElementOptions{
-        while(data.type.startsWith("#")){
-            let templateName = data.type.slice(1);
-            if(!TEMPLATES[templateName]){
+    protected resolveTemplate(opt: SignElementOptions): SignElementOptions{
+        while(opt.type.startsWith("#")){
+            let templateName = opt.type.slice(1);
+            let templ = this.conf.templates[templateName];
+            if(!templ){
                 alert("ERROR: Unknown template \"" + templateName + "\".")
                 break;
             }
 
-            let template = TEMPLATES[templateName](...(data.params || []));
-            template.properties = Object.assign(template.properties || {}, data.properties);
-            data = template;
+            let template = templ(...(opt.params ?? []));
+
+            Object.assign(template.properties ??= {}, opt.properties);
+            opt = template;
         }
 
-        return data;
+        return opt;
     }
 
-    protected constructor(data: SignElementOptions, parentProperties: SignElementBaseProperties | null){
-        this.type = data.type;
+    protected constructor(config: UserConfigData){
+        this.conf = {
+            properties: Object.assign({}, propertiesDefaults, config.properties),
+            signTypes: config.signTypes ?? {},
+            symbols: config.symbols ?? {},
+            borderFeatures: config.borderFeatures ?? {},
+            templates: config.templates ?? {}
+        };
+    }
 
-        let prop = Object.assign(
+    private static getInhProperties(prop: SignElementProperties): SignElementBaseProperties{
+        const { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing } = prop;
+        return { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing };
+    }
+
+    private _render(opt: SignElementOptions, parentProperties: SignElementBaseProperties | null): RenderingResult<C, T>{
+        let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
+
+        opt = this.resolveTemplate(opt);
+
+        let prop: SignElementProperties = Object.assign(
             {},
-            GLOBAL_DEFAULTS,
-            DEFAULT_PROPERTIES[data.type.startsWith(".") ? "." : data.type],
-            parentProperties === null ? DEFAULTS : parentProperties,
-            data.properties
+            this.conf.properties.globalDefaults,
+            this.conf.properties.defaults[opt.type.startsWith(".") ? "." : opt.type],
+            parentProperties === null ? this.conf.properties.rootDefaults : parentProperties,
+            opt.properties
         );
 
-        this.properties = Object.assign(prop, {
+        Object.assign(prop, {
             padding: to4EForm(prop.padding),
             borderRadius: to4EForm(prop.borderRadius),
             borderWidth: to4EForm(prop.borderWidth)
         });
 
-        this.children = [];
-        this.nodes = {};
-    }
-
-    protected addCN<X extends SignElement<C, T>>(Cl: new (opt: any, inh: SignElementBaseProperties | null) => X, data: SignElementOptions){
-        let inh = this.getInhProperties();
-
-        this.children = (data.elements || []).map(element => new Cl(element, inh));
-
-        Object.entries(data.nodes || {}).forEach(e => {
-            this.nodes[e[0]] = {
-                signelement: new Cl(e[1].data, inh),
-                anchor: e[1].anchor
-            }
-        });
-    }
-
-    private getInhProperties(): SignElementBaseProperties{
-        const { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing } = this.properties;
-        return { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing };
-    }
-
-    private _render(): RenderingResult<C, T>{
-        let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
-
-        let padding = Array.from(this.properties.padding);
+        let padding = Array.from(prop.padding);
 
         let width = 0, height = 0, maxHeight = 0;
         let renderPromise: (ctx: T, x0: number, y0: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
-        if(this.type === "skylt"){
+        if(opt.type === "skylt"){
             let w = [0], h = [0], j = 0;
 
             let totalLineSpacing = 0;
 
-            let ch = this.children.map((c, i) => {
-                let re = c._render();
-                let c2 = { isn: c.type === "newline", r: re, bs: re.bs, row: j, x: 0 };
+            let ch = (opt.elements ?? []).map((c, i) => {
+                let re = this._render(c, SignRenderer.getInhProperties(prop));
+                let c2 = { isn: c.type === "newline", r: re, bs: re.bs, row: j, x: 0, p: c.properties };
 
-                if(c2.isn || (i > 0 && this.properties.blockDisplay)){
+                if(c2.isn || (i > 0 && prop.blockDisplay)){
                     c2.row = ++j;
                     w.push(0);
                     h.push(0);
-                    totalLineSpacing += (this.properties.blockDisplay ? this.properties.lineSpacing : c.properties.lineSpacing);
+                    totalLineSpacing += (prop.blockDisplay ? prop.lineSpacing : prop.lineSpacing);
                 }
 
                 if(!c2.isn){
                     if(w[j] > 0){
-                        w[j] += this.properties.xSpacing;
+                        w[j] += prop.xSpacing;
                     }
 
                     c2.x = w[j];
@@ -324,8 +309,8 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
             height = h.reduce((a, b) => a + b, totalLineSpacing);
 
             ch = ch.map(c2 => {
-                if(!c2.isn && !this.properties.blockDisplay){
-                    c2.x += SignElement.calculateAlignmentOffset(this.properties.alignContents, w[c2.row], width);
+                if(!c2.isn && !prop.blockDisplay){
+                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], width);
                 }
 
                 return c2;
@@ -340,7 +325,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 height + padding[1]
             ];
 
-            if(this.properties.passAnchor){
+            if(prop.passAnchor){
                 firstLastCenter[0] += ch[0].r.flc[0];
                 firstLastCenter[1] += ch[0].bs[1] + ch[0].r.flc[1];
                 firstLastCenter[2] += ch[ch.length - 1].r.flc[2];
@@ -355,17 +340,17 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
             let y = 0;
 
             renderPromise = (ctx, x0, y0, _) => Promise.all(ch.map((c2, i) => {
-                if(c2.isn || (i > 0 && this.properties.blockDisplay)){
-                    y += (this.properties.blockDisplay ? this.properties.lineSpacing : this.children[i].properties.lineSpacing);
+                if(c2.isn || (i > 0 && prop.blockDisplay)){
+                    y += (prop.blockDisplay ? prop.lineSpacing : (c2.p?.lineSpacing ?? prop.lineSpacing));
                     y += h[c2.row - 1];
                 }
 
                 if(c2.isn) return;
 
-                let dx = 0, iw = this.properties.blockDisplay ? (width - c2.bs[0] - c2.bs[2]) : c2.r.w;
+                let dx = 0, iw = prop.blockDisplay ? (width - c2.bs[0] - c2.bs[2]) : c2.r.w;
 
-                if(this.properties.blockDisplay){
-                    dx += SignElement.calculateAlignmentOffset(this.children[i].properties.alignContents, w[c2.row], iw + c2.bs[0] + c2.bs[2]);
+                if(prop.blockDisplay){
+                    dx += SignRenderer.calculateAlignmentOffset(c2.p?.alignContents, w[c2.row], iw + c2.bs[0] + c2.bs[2]);
                 }
 
                 return c2.r.doRender(
@@ -373,61 +358,62 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                     x0 + padding[0] + c2.x, y0 + padding[1] + y,
                     dx,
                     h[c2.row] - c2.bs[1] - c2.bs[3],
-                    this.properties.alignContentsV,
+                    prop.alignContentsV,
                     iw
                 );
             })).then(() => {});
-        }else if(this.type === "vagnr" || this.type === "text"){
+        }else if(opt.type === "vagnr" || opt.type === "text"){
             let ctx_temp = this.createCanvas();
 
-            ctx_temp.font = "32px " + this.properties.font;
+            ctx_temp.font = "32px " + prop.font;
 
-            width = Math.floor(ctx_temp.measureText(this.properties.value || "").width);
-            height = this.properties.lineHeight;
+            width = Math.floor(ctx_temp.measureText(prop.value ?? "").width);
+            height = prop.lineHeight;
 
             renderPromise = (ctx, x0, y0, _) => new Promise(res => {
-                if(this.properties.dashedInset){
-                    let bw = this.properties.borderWidth;
+                if(prop.dashedInset){
+                    let bw = prop.borderWidth;
 
                     roundedFrame(
                         ctx,
                         x0 + 2*bw[0], y0 + 2*bw[1],
                         width + padding[0] + padding[2] - 2*bw[0] - 2*bw[2], height + padding[1] + padding[3] - 2*bw[1] - 2*bw[3],
                         bw,
-                        this.properties.color,
-                        this.properties.borderRadius,
+                        prop.color,
+                        prop.borderRadius,
                         [10, 10]
                     );
                 }
 
-                ctx.font = "32px " + this.properties.font;
+                ctx.font = "32px " + prop.font;
                 ctx.textBaseline = "middle";
 
-                ctx.fillStyle = this.properties.color;
-                ctx.fillText(this.properties.value || "", x0 + padding[0], y0 + firstLastCenter[1]);
+                ctx.fillStyle = prop.color;
+                ctx.fillText(prop.value ?? "", x0 + padding[0], y0 + firstLastCenter[1]);
 
                 res();
             });
-        }else if(this.type === "symbol"){
-            let symbolType = SYMBOLER[this.properties.type || ""];
+        }else if(opt.type === "symbol"){
+            let symbolType = this.conf.symbols[prop.type ?? ""];
 
             width = symbolType.width;
             [height, maxHeight] = symbolType.height;
 
-            let url = "res/symbol/" + (this.properties.type || "") + ".json";
-            let v: string | undefined = this.properties.variant || symbolType.default;
+            let url = "res/symbol/" + (prop.type ?? "default") + ".json";
+            let v: string | undefined = prop.variant ?? symbolType.default;
 
             renderPromise = (ctx, x0, y0, maxInnerHeight) => this.drawVec(
-                ctx, url, this.properties.color, v === undefined ? [] : [v],
+                ctx, url, prop.color, v === undefined ? [] : [v],
                 x0 + padding[0], y0 + padding[1], // dx, dy
                 width, maxInnerHeight - padding[1] - padding[3] // dw=sw, dh=sh
             );
-        }else if(this.type === "newline"){
+        }else if(opt.type === "newline"){
             width = 0;
             height = 0;
-        }else if(this.type.startsWith(".")){
-            let t = SKYLTTYPER[this.type.slice(1)];
-            let keys = Object.keys(t.nodes).sort().filter(nodeName => !!this.nodes[nodeName]);
+        }else if(opt.type.startsWith(".") && opt.nodes !== undefined){
+            let nodes = opt.nodes;
+            let t = this.conf.signTypes[opt.type.slice(1)];
+            let keys = Object.keys(t.nodes).sort().filter(nodeName => !!nodes[nodeName]);
 
             let svgBox = Array.from(t.core);
             keys.forEach(nodeName => {
@@ -446,14 +432,15 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
             // fonts and svg loaded successfully
             let r = keys.map(nodeName => {
-                let n = this.nodes[nodeName];
-                let s = n.signelement;
+                let n = nodes[nodeName];
+                let s = n.data;
 
                 let tn = t.nodes[nodeName];
 
-                n.anchor = Object.assign({ "x": tn.ax, "y": tn.ay }, n.anchor);
+                let ax = n.anchor.x ?? tn.ax,
+                    ay = n.anchor.y ?? tn.ay;
 
-                let result = s._render();
+                let result = this._render(s, SignRenderer.getInhProperties(prop));
                 let bs = result.bs;
 
                 let rse = [ result.w + bs[0] + bs[2], result.h + bs[1] + bs[3] ];
@@ -461,7 +448,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 let lx = tn.x.map(x => x * t.width).map(Math.floor), ty = tn.y.map(y => y * t.height).map(Math.floor);
                 let leftX: number = 0, topY: number = 0;
 
-                switch(n.anchor.x){
+                switch(ax){
                     case "right":
                         leftX = lx[1] - rse[0];
                         break;
@@ -478,7 +465,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                         leftX = lx[0];
                 }
 
-                switch(n.anchor.y){
+                switch(ay){
                     case "bottom":
                         topY = ty[1] - rse[1];
                         break;
@@ -514,7 +501,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
                 let dx = 0;
 
-                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, res.renderPromise.h, this.properties.alignContentsV);
+                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, res.renderPromise.h, prop.alignContentsV);
             })).then(() => {
                 if(t.width === 0 || t.height === 0) return;
 
@@ -531,9 +518,9 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 ]; // [x0, y0, w, h]
 
                 return this.drawVec(
-                    ctx, "res/" + this.type.slice(1) + ".json", this.properties.color, keys,
-                    x0 + this.properties.padding[0] - boundingBox[0] + crop[0], // dx
-                    y0 + this.properties.padding[1] - boundingBox[2] + crop[1], // dy
+                    ctx, "res/" + opt.type.slice(1) + ".json", prop.color, keys,
+                    x0 + prop.padding[0] - boundingBox[0] + crop[0], // dx
+                    y0 + prop.padding[1] - boundingBox[2] + crop[1], // dy
                     crop[2], crop[3], // dw=sw, dh=sh
                     crop[0], crop[1] // sx, sy
                 );
@@ -542,7 +529,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
             alert("Fel!");
         }
 
-        let bs = SignElement.borderSize(width + padding[0] + padding[2], height + padding[1] + padding[3], this.properties);
+        let bs = this.borderSize(width + padding[0] + padding[2], height + padding[1] + padding[3], prop);
 
         if(firstLastCenter.some(isNaN)){
             firstLastCenter = [
@@ -565,7 +552,7 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                 const innerWidth = iw === 0 ? (width + padding[0] + padding[2]) : iw;
                 let innerHeight = height + padding[1] + padding[3];
 
-                if(this.properties.grow && innerHeight < maxInnerHeight){
+                if(prop.grow && innerHeight < maxInnerHeight){
                     innerHeight = Math.min(maxInnerHeight, padding[1] + padding[3] + maxHeight);
                 }
 
@@ -580,12 +567,12 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
 
                 // tag bort rundade hörn på sidor med hela kantutsmyckningar
                 let bfs = ["left", "top", "right", "bottom"].map(s => {
-                    let bf = this.properties.borderFeatures[s];
-                    return bf !== undefined && BORDER_FEATURES[bf].cover; // cover => hel, täcker hela kantens längd
+                    let bf = prop.borderFeatures[s];
+                    return bf !== undefined && this.conf.borderFeatures[bf].cover; // cover => hel, täcker hela kantens längd
                 });
 
-                let br: Vec4 = [...this.properties.borderRadius],
-                    bw: Vec4 = [...this.properties.borderWidth];
+                let br: Vec4 = [...prop.borderRadius],
+                    bw: Vec4 = [...prop.borderWidth];
 
                 for(let i = 0; i < 4; i++){
                     if(bfs[i] || bfs[(i + 1) % 4]) br[i] = 0;
@@ -598,8 +585,8 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     br,
-                    this.properties.background,
-                    !!this.properties.fillCorners
+                    prop.background,
+                    !!prop.fillCorners
                 );
 
                 await renderPromise(ctx, x0 + dx + bs.h[0], y0 + dy + bs.h[1], innerHeight);
@@ -609,19 +596,19 @@ export abstract class SignElement<C, T extends NewDrawingArea<C>>{
                     x0 + bs.h[0], y0 + bs.h[1],
                     innerWidth, innerHeight,
                     bw,
-                    this.properties.color,
+                    prop.color,
                     br
                 );
 
-                Object.entries(this.properties.borderFeatures).forEach(feature => {
-                    this.renderBorderFeature(ctx, x0, y0, feature[1], feature[0], bs, innerWidth, innerHeight);
+                Object.entries(prop.borderFeatures).forEach(feature => {
+                    this.renderBorderFeature(ctx, x0, y0, this.conf.borderFeatures[feature[1]], feature[0], bs, innerWidth, innerHeight, prop);
                 });
             }
         };
     }
 
-    public async render(): Promise<C>{
-        let r = this._render();
+    public async render(data: SignElementOptions): Promise<C>{
+        let r = this._render(data, null);
 
         let bs = r.bs;
         let canv = this.createCanvas(r.w + bs[0] + bs[2], r.h + bs[1] + bs[3]);

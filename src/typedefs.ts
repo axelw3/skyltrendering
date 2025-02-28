@@ -4,7 +4,12 @@ export type Vec2 = [number, number];
 export type Vec4 = [number, number, number, number];
 export type Vec6 = [number, number, number, number, number, number];
 
-type BorderFeatureDefinition = {
+/**
+ * Designer sparas i "nedre kant"-form, dvs.
+ * orienterade på motsvarande sätt som klammern
+ * i skylt F9 (samlingsmärke för vägvisning).
+ */
+export type BorderFeatureDefinition = {
     vars?: string[][];
     paths: {p: string, f?: number, s?: number}[];
     w: number;
@@ -76,7 +81,10 @@ export interface SignElementProperties extends SignElementBaseProperties, SignEl
     padding: Vec4;
 };
 
-export type SignElementAnchor = { x: string; } | { y: string; };
+type SignElementAnchor = {
+    x?: string;
+    y?: string;
+};
 
 type SignElementNode = {
     anchor: SignElementAnchor;
@@ -93,25 +101,38 @@ export type SignElementOptions = {
     params?: any[];
 }
 
+export type PropertiesDefaults = {
+    globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
+    rootDefaults: SignElementBaseProperties & SignElementUserProperties;
+    defaults: {[key: string]: SignElementUserProperties};
+};
+
 export type ConfigData = {
-    properties: {
-        globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
-        rootDefaults: SignElementBaseProperties & SignElementUserProperties;
-        defaults: {[key: string]: SignElementUserProperties};
-    },
+    // Olika standardegenskaper
+    properties: PropertiesDefaults,
+
+    // Skylttyper ("symboler med noder")
     signTypes: {
         [key: string]: SignTypeDefinition;
     },
+
+    // Symboldefinitioner
     symbols: {
         [key: string]: SignSymbolDefinition;
     },
+
+    // Kantdekorationer
     borderFeatures: {
         [key: string]: BorderFeatureDefinition;
     },
+
+    // "Dynamiska" mallar (funktioner "parametrar => skyltkonfiguration")
     templates: {
         [key: string]: (...args: any[]) => SignElementOptions;
     }
 };
+
+export type UserConfigData = Partial<ConfigData>;
 
 export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     flc: Vec4;

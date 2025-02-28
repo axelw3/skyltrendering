@@ -1,5 +1,5 @@
-import { SignElement as _SignElement } from "./render.js";
-import { SignElementBaseProperties, SignElementOptions, Vec6, NewDrawingArea } from "./typedefs.js";
+import { SignRenderer as _SignRenderer } from "./render.js";
+import { Vec6, NewDrawingArea } from "./typedefs.js";
 
 
 class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
@@ -63,18 +63,12 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
     }
 }
 
-export class SignElement extends _SignElement<HTMLCanvasElement, BrowserDrawingArea>{
-    constructor(opt: SignElementOptions, popt: SignElementBaseProperties | null){
-        opt = _SignElement.resolveTemplate(opt);
-        super(opt, popt);
-        this.addCN<SignElement>(SignElement, opt);
-    }
-
+export class SignRenderer extends _SignRenderer<HTMLCanvasElement, BrowserDrawingArea>{
     protected override createCanvas(w?: number, h?: number): BrowserDrawingArea {
         return new BrowserDrawingArea(w, h);
     }
 
-    protected getText(url: string): Promise<string> {
+    protected override getText(url: string): Promise<string> {
         return new Promise(resolve => {
             let req = new XMLHttpRequest();
             req.addEventListener("load", () => {

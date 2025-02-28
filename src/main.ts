@@ -1,5 +1,5 @@
-import { SignElement as _SignElement } from "./render.js";
-import { SignElementBaseProperties, SignElementOptions, Vec6, NewDrawingArea, Path2D as _Path2D } from "./typedefs.js";
+import { SignRenderer as _SignRenderer } from "./render.js";
+import { Vec6, NewDrawingArea, Path2D as _Path2D } from "./typedefs.js";
 
 import { createCanvas, Canvas, Path2D, SKRSContext2D } from "@napi-rs/canvas";
 import { readFile } from "fs/promises"
@@ -66,13 +66,7 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
 }
 
 
-export class SignElement extends _SignElement<Canvas, NodeDrawingArea>{
-    constructor(opt: SignElementOptions, popt: SignElementBaseProperties | null){
-        opt = _SignElement.resolveTemplate(opt);
-        super(opt, popt);
-        this.addCN<SignElement>(SignElement, opt);
-    }
-
+export class SignRenderer extends _SignRenderer<Canvas, NodeDrawingArea>{
     protected override createCanvas(w?: number, h?: number): NodeDrawingArea {
         return new NodeDrawingArea(w || 300, h || 150);
     }
