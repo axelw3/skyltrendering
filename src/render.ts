@@ -52,18 +52,18 @@ class BorderElement{
      */
     h: number;
 
-    constructor(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, sideOuterLength: number, perpOuterLength: number){
+    constructor(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, brC: number, brD: number, sideOuterLength: number, perpOuterLength: number){
         this.w = feature.w === undefined ? sideOuterLength : (feature.w + bw);
-        this.env = this.calculateEnv(feature, bw, brA, brB);
+        this.env = this.calculateEnv(feature, bw, brA, brB, brC, brD);
         this.h = feature.h === undefined ? perpOuterLength : (mathEval(feature.h, this.env) + bw);
 
         // h: *inre* djup/höjd för kantelementet (dvs. exklusive +bw)
         this.env["h"] = this.h - bw;
     }
 
-    private calculateEnv(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number): MathEnv{
+    private calculateEnv(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, brC: number, brD: number): MathEnv{
         // w: längd/bredd/sidlängd för kantelementet
-        let env: MathEnv = {bra: brA, brb: brB, bw: bw, w: this.w - bw};
+        let env: MathEnv = {bra: brA, brb: brB, brc: brC, brd: brD, bw: bw, w: this.w - bw};
 
         if(!Array.isArray(feature.vars)) return env;
 
@@ -95,23 +95,25 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     protected abstract getText(url: string): Promise<string>;
 
     private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
-        let bs = new BorderDimensions(properties.borderWidth),
+        let bw = properties.borderWidth,
+            br = properties.borderRadius;
+        let bs = new BorderDimensions(bw),
             bf = properties.borderFeatures;
 
         if(bf["left"] !== undefined)
-            bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], properties.borderWidth[0], properties.borderRadius[0], properties.borderRadius[3], innerHeight + properties.borderWidth[1] + properties.borderWidth[3], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+            bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], bw[0], br[3], br[0], br[1], br[2], innerHeight + bw[1] + bw[3], innerWidth + bw[0] + bw[2]));
 
         if(bf["right"] !== undefined)
-            bs.set(2, new BorderElement(this.conf.borderFeatures[bf["right"]], properties.borderWidth[2], properties.borderRadius[2], properties.borderRadius[1], innerHeight + properties.borderWidth[1] + properties.borderWidth[3], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+            bs.set(2, new BorderElement(this.conf.borderFeatures[bf["right"]], bw[2], br[1], br[2], br[3], br[0], innerHeight + bw[1] + bw[3], innerWidth + bw[0] + bw[2]));
 
         if(bf["top"] !== undefined)
-            bs.set(1, new BorderElement(this.conf.borderFeatures[bf["top"]], properties.borderWidth[1], properties.borderRadius[1], properties.borderRadius[0], innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+            bs.set(1, new BorderElement(this.conf.borderFeatures[bf["top"]], bw[1], br[0], br[1], br[2], br[3], innerWidth + bw[0] + bw[2], innerHeight + bw[1] + bw[3]));
 
         if(bf["bottom"] !== undefined)
-            bs.set(3, new BorderElement(this.conf.borderFeatures[bf["bottom"]], properties.borderWidth[3], properties.borderRadius[3], properties.borderRadius[2], innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+            bs.set(3, new BorderElement(this.conf.borderFeatures[bf["bottom"]], bw[3], br[2], br[3], br[0], br[1], innerWidth + bw[0] + bw[2], innerHeight + bw[1] + bw[3]));
 
         if(bf["overlay"] !== undefined)
-            bs.set(4, new BorderElement(this.conf.borderFeatures[bf["overlay"]], properties.borderWidth[4], 0, 0, innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+            bs.set(4, new BorderElement(this.conf.borderFeatures[bf["overlay"]], bw[4], br[0], br[1], br[2], br[3], innerWidth + bw[0] + bw[2], innerHeight + bw[1] + bw[3]));
 
         return bs;
     }
