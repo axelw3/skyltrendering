@@ -2,6 +2,7 @@ export type MathEnv = { [key: string]: number};
 
 export type Vec2 = [number, number];
 export type Vec4 = [number, number, number, number];
+export type Vec5 = [number, number, number, number, number];
 export type Vec6 = [number, number, number, number, number, number];
 
 /**
@@ -12,9 +13,9 @@ export type Vec6 = [number, number, number, number, number, number];
 export type BorderFeatureDefinition = {
     vars?: string[][];
     paths: {p: string, f?: number, s?: number}[];
-    w: number;
-    h: number | string;
-    cover: boolean;
+    w?: number;
+    h?: number | string;
+    //cover: boolean;
 };
 
 type SignTypeDefinition = {
@@ -75,9 +76,9 @@ type SignElementUserProperties = Partial<SignElementBaseProperties & SignElement
 
 // formatet som this.properties följer
 export interface SignElementProperties extends SignElementBaseProperties, SignElementRequiredProperties, Partial<SignElementOptionalProperties>{
-    borderFeatures: {[key: string]: string};
+    borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
     borderRadius: Vec4;
-    borderWidth: Vec4;
+    borderWidth: Vec5;
     padding: Vec4;
 };
 

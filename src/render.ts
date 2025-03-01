@@ -1,4 +1,4 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults } from "./typedefs.js"
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5 } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 
@@ -22,34 +22,48 @@ const propertiesDefaults: PropertiesDefaults = {
 // 4. Globalt standardvärde (från globalDefaults)
 
 function to4EForm(data: number[] | number): Vec4{
-    if(!Array.isArray(data)) data = [ data, data ];
-    if(data.length != 4) data = [ data[0], data[1], data[0], data[1] ];
-    return [data[0], data[1], data[2], data[3]];
+    if(!Array.isArray(data)) return [data, data, data, data];
+    let a = data[0] ?? 0,
+        b = data[1] ?? data[0] ?? 0;
+    return [a, b, data[2] ?? a, data[3] ?? b];
+}
+
+function to5EForm(data: number[] | number): Vec5{
+    let v4 = to4EForm(data);
+    return [
+        ...v4,
+        (Array.isArray(data) ? data[4] : data) ?? Math.min(...v4)
+    ];
 }
 
 class BorderElement{
     env: MathEnv;
+
+    /**
+     * Kantelementets *yttre* bredd (dvs. inklusive ev. +bw), *före rotation*.
+     * 
+     * Om `cover == true` är detta värde lika med `sideOuterLength`, dvs. skyltelementets
+     * yttre höjd (`left`/`right`) eller bredd (`top`/`bottom`).
+     */
     w: number;
+
+    /**
+     * Kantelementets *yttre* höjd (inklusive +bw), *före rotation*.
+     */
     h: number;
 
-    constructor(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, sideLength: number){
-        let w0 = feature.w,
-            cvr = !!feature.cover;
+    constructor(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, sideOuterLength: number, perpOuterLength: number){
+        this.w = feature.w === undefined ? sideOuterLength : (feature.w + bw);
+        this.env = this.calculateEnv(feature, bw, brA, brB);
+        this.h = feature.h === undefined ? perpOuterLength : (mathEval(feature.h, this.env) + bw);
 
-        if(cvr) w0 = sideLength - bw;
-
-        this.env = BorderElement.calculateEnv(feature, bw, brA, brB, w0);
-
-        let h0 = mathEval(feature.h, this.env);
-
-        this.env["h"] = h0;
-
-        this.w = w0 + bw;
-        this.h = h0 + bw;
+        // h: *inre* djup/höjd för kantelementet (dvs. exklusive +bw)
+        this.env["h"] = this.h - bw;
     }
 
-    static calculateEnv(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number, w0: number): MathEnv{
-        let env: MathEnv = {bra: brA, brb: brB, bw: bw, w: w0};
+    private calculateEnv(feature: BorderFeatureDefinition, bw: number, brA: number, brB: number): MathEnv{
+        // w: längd/bredd/sidlängd för kantelementet
+        let env: MathEnv = {bra: brA, brb: brB, bw: bw, w: this.w - bw};
 
         if(!Array.isArray(feature.vars)) return env;
 
@@ -65,14 +79,14 @@ class BorderDimensions{
     h: Vec4;
     el: (BorderElement | null)[];
 
-    constructor(heights: Vec4){
-        this.h = [...heights];
-        this.el = [null, null, null, null];
+    constructor(bw: Vec4 | Vec5){
+        this.h = [bw[0], bw[1], bw[2], bw[3]];
+        this.el = [null, null, null, null, null];
     }
 
     set(i: number, el: BorderElement){
         this.el[i] = el;
-        this.h[i] = Math.floor(el.h);
+        if(i < 4) this.h[i] = Math.floor(el.h);
     }
 }
 
@@ -85,16 +99,19 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             bf = properties.borderFeatures;
 
         if(bf["left"] !== undefined)
-            bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], properties.borderWidth[0], properties.borderRadius[0], properties.borderRadius[3], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+            bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], properties.borderWidth[0], properties.borderRadius[0], properties.borderRadius[3], innerHeight + properties.borderWidth[1] + properties.borderWidth[3], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
 
         if(bf["right"] !== undefined)
-            bs.set(2, new BorderElement(this.conf.borderFeatures[bf["right"]], properties.borderWidth[2], properties.borderRadius[2], properties.borderRadius[1], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+            bs.set(2, new BorderElement(this.conf.borderFeatures[bf["right"]], properties.borderWidth[2], properties.borderRadius[2], properties.borderRadius[1], innerHeight + properties.borderWidth[1] + properties.borderWidth[3], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
 
         if(bf["top"] !== undefined)
-            bs.set(1, new BorderElement(this.conf.borderFeatures[bf["top"]], properties.borderWidth[1], properties.borderRadius[1], properties.borderRadius[0], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+            bs.set(1, new BorderElement(this.conf.borderFeatures[bf["top"]], properties.borderWidth[1], properties.borderRadius[1], properties.borderRadius[0], innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
 
         if(bf["bottom"] !== undefined)
-            bs.set(3, new BorderElement(this.conf.borderFeatures[bf["bottom"]], properties.borderWidth[3], properties.borderRadius[3], properties.borderRadius[2], innerWidth + properties.borderWidth[0] + properties.borderWidth[2]));
+            bs.set(3, new BorderElement(this.conf.borderFeatures[bf["bottom"]], properties.borderWidth[3], properties.borderRadius[3], properties.borderRadius[2], innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
+
+        if(bf["overlay"] !== undefined)
+            bs.set(4, new BorderElement(this.conf.borderFeatures[bf["overlay"]], properties.borderWidth[4], 0, 0, innerWidth + properties.borderWidth[0] + properties.borderWidth[2], innerHeight + properties.borderWidth[1] + properties.borderWidth[3]));
 
         return bs;
     }
@@ -111,31 +128,38 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         }
     }
 
-    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, feature: BorderFeatureDefinition, side: string, bs: BorderDimensions, borderBoxInnerW: number, innerHeight: number, prop: SignElementProperties){
-        let color = prop.color,
-            background = prop.background;
+    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, feature: BorderFeatureDefinition, side: string, bs: BorderDimensions, innerWidth: number, innerHeight: number, prop: SignElementProperties){
+        // (x0, y0) - Övre vänstra hörnet. Denna punkt är densamma som yttersta punkten på hörnet då borderRadius == 0.
+
+        let clr = [prop.color, prop.background];
 
         let lr = (side === "left" || side === "right");
-        let bri = lr ? (side === "left" ? 0 : 2) : (side === "top" ? 1 : 3);
+        let bri = ["left", "top", "right", "bottom", "overlay"].indexOf(side);
 
         let bw = prop.borderWidth[bri];
-        let s = [bs.el[bri]?.w ?? 0, bs.h[bri]];
+        let s = [bs.el[bri]?.w ?? 0, bs.el[bri]?.h ?? 0];
+
+        switch(side){
+            case "overlay":
+                x0 += bs.h[0] + Math.floor((innerWidth - s[0]) / 2);
+                y0 += bs.h[1] + Math.floor((innerHeight - s[1]) / 2);
+                break;
+            case "bottom":
+                y0 += bs.h[1] + innerHeight;
+            case "top":
+                x0 += bs.h[0] + Math.floor((innerWidth - s[0]) / 2);
+                break;
+            case "right":
+                x0 += bs.h[0] + innerWidth;
+            case "left":
+                y0 += bs.h[1] + Math.floor((innerHeight - s[0]) / 2);
+                break;
+            default:
+                throw new Error("Okänd kantplacering: " + side);
+        }
 
         let w = lr ? s[1] : s[0],
             h = lr ? s[0] : s[1];
-
-        switch(side){
-            case "bottom":
-                y0 += innerHeight + bs.h[1];
-            case "top":
-                x0 += bs.h[0] + Math.floor((borderBoxInnerW - w) / 2);
-                break;
-            case "right":
-                x0 += borderBoxInnerW + bs.h[0];
-            default:
-                y0 += bs.h[1] + Math.floor((innerHeight - h) / 2);
-                break;
-        }
 
         // left:    cos 0   sin -1
         // top:     cos -1  sin 0
@@ -143,7 +167,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         // bottom:  cos 1   sin 0
 
         let sr = lr ? (side === "left" ? 1 : (-1)) : 0, cr = lr ? 0 : (side === "top" ? (-1) : 1);
-        let [a, b] = [(s[0] - bw) / 2, (s[1] - bw) / 2];
+        let [a, b] = [(s[0] - bw) / 2, (s[1] - bw) / 2]; // rotationspunkt
 
         let tm: Vec6 = [
             cr, sr, -sr, cr, (x0 + w / 2) - a*cr + b*sr, (y0 + h / 2) - a*sr - b*cr
@@ -152,8 +176,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         //ctx.fillStyle="#000";
         //ctx.fillRect(x0, y0, w, h);
 
-        ctx.fillStyle = background;
-        ctx.fillRect(x0 + (side === "left" ? (s[1] - bw) : 0) + (lr ? 0 : (bw/2)), y0 + (side === "top" ? (s[1] - bw) : 0) + (lr ? (bw/2) : 0), lr ? bw : (s[0] - bw), lr ? (s[0] - bw) : bw);
+        if(side !== "overlay"){
+            ctx.fillStyle = clr[1];
+            ctx.fillRect(x0 + (side === "left" ? (s[1] - bw) : 0) + (lr ? 0 : (bw/2)), y0 + (side === "top" ? (s[1] - bw) : 0) + (lr ? (bw/2) : 0), lr ? bw : (s[0] - bw), lr ? (s[0] - bw) : bw);
+        }
 
         ctx.lineWidth = bw;
 
@@ -161,12 +187,12 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let p = ctx.createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
 
             if(path.f !== undefined){
-                ctx.fillStyle = [color, background][Math.abs(path.f)-1];
+                ctx.fillStyle = clr[Math.abs(path.f)-1];
                 if(path.f > 0 || prop.fillCorners) ctx.fill(p);
             }
 
             if(path.s !== undefined){
-                ctx.strokeStyle = [color, background][Math.abs(path.s)-1];
+                ctx.strokeStyle = clr[Math.abs(path.s)-1];
                 if(path.s > 0 || prop.fillCorners) ctx.stroke(p);
             }
         });
@@ -265,7 +291,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         Object.assign(prop, {
             padding: to4EForm(prop.padding),
             borderRadius: to4EForm(prop.borderRadius),
-            borderWidth: to4EForm(prop.borderWidth)
+            borderWidth: to5EForm(prop.borderWidth)
         });
 
         let padding = Array.from(prop.padding);
@@ -378,7 +404,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         ctx,
                         x0 + 2*bw[0], y0 + 2*bw[1],
                         width + padding[0] + padding[2] - 2*bw[0] - 2*bw[2], height + padding[1] + padding[3] - 2*bw[1] - 2*bw[3],
-                        bw,
+                        [bw[0], bw[1], bw[2], bw[3]],
                         prop.color,
                         prop.borderRadius,
                         [10, 10]
@@ -566,13 +592,12 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 }
 
                 // tag bort rundade hörn på sidor med hela kantutsmyckningar
-                let bfs = ["left", "top", "right", "bottom"].map(s => {
-                    let bf = prop.borderFeatures[s];
-                    return bf !== undefined && this.conf.borderFeatures[bf].cover; // cover => hel, täcker hela kantens längd
+                let bfs = [prop.borderFeatures.left, prop.borderFeatures.top, prop.borderFeatures.right, prop.borderFeatures.bottom].map(bf => {
+                    return bf !== undefined && this.conf.borderFeatures[bf].w === undefined; // cover => hel, täcker hela kantens längd
                 });
 
                 let br: Vec4 = [...prop.borderRadius],
-                    bw: Vec4 = [...prop.borderWidth];
+                    bw: Vec4 = [prop.borderWidth[0], prop.borderWidth[1], prop.borderWidth[2], prop.borderWidth[3]];
 
                 for(let i = 0; i < 4; i++){
                     if(bfs[i] || bfs[(i + 1) % 4]) br[i] = 0;
