@@ -178,7 +178,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         //ctx.fillStyle="#000";
         //ctx.fillRect(x0, y0, w, h);
 
-        if(side !== "overlay"){
+        if(side !== "overlay" && !feature.glaze){
             ctx.fillStyle = clr[1];
             ctx.fillRect(x0 + (side === "left" ? (s[1] - bw) : 0) + (lr ? 0 : (bw/2)), y0 + (side === "top" ? (s[1] - bw) : 0) + (lr ? (bw/2) : 0), lr ? bw : (s[0] - bw), lr ? (s[0] - bw) : bw);
         }
@@ -189,13 +189,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let p = ctx.createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
 
             if(path.f !== undefined){
-                ctx.fillStyle = clr[Math.abs(path.f)-1];
-                if(path.f > 0 || prop.fillCorners) ctx.fill(p);
+                ctx.fillStyle = typeof path.f === "string" ? path.f : clr[Math.abs(path.f)-1];
+                if(typeof path.f === "string" || path.f > 0 || prop.fillCorners) ctx.fill(p);
             }
 
             if(path.s !== undefined){
-                ctx.strokeStyle = clr[Math.abs(path.s)-1];
-                if(path.s > 0 || prop.fillCorners) ctx.stroke(p);
+                ctx.strokeStyle = typeof path.s === "string" ? path.s : clr[Math.abs(path.s)-1];
+                if(typeof path.s === "string" || path.s > 0 || prop.fillCorners) ctx.stroke(p);
             }
         });
     }
@@ -618,6 +618,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 await renderPromise(ctx, x0 + dx + bs.h[0], y0 + dy + bs.h[1], innerHeight);
 
+                let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
+                    let bf = this.conf.borderFeatures[feature[1]];
+                    if(!bf.glaze) return true;
+                    this.renderBorderFeature(ctx, x0, y0, bf, feature[0], bs, innerWidth, innerHeight, prop);
+                    return false;
+                });
+
                 roundedFrame(
                     ctx,
                     x0 + bs.h[0], y0 + bs.h[1],
@@ -627,7 +634,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     br
                 );
 
-                Object.entries(prop.borderFeatures).forEach(feature => {
+                bfts.forEach(feature => {
                     this.renderBorderFeature(ctx, x0, y0, this.conf.borderFeatures[feature[1]], feature[0], bs, innerWidth, innerHeight, prop);
                 });
             }

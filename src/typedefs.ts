@@ -12,10 +12,10 @@ export type Vec6 = [number, number, number, number, number, number];
  */
 export type BorderFeatureDefinition = {
     vars?: string[][];
-    paths: {p: string, f?: number, s?: number}[];
+    paths: {p: string, f?: number | string, s?: number | string}[];
     w?: number;
     h?: number | string;
-    //cover: boolean;
+    glaze?: boolean;
 };
 
 type SignTypeDefinition = {
