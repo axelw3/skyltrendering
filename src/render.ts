@@ -426,7 +426,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let symbolType = this.conf.symbols[prop.type ?? ""];
 
             width = symbolType.width;
-            [height, maxHeight] = symbolType.height;
+            height = symbolType.height[0];
+            maxHeight = prop.maxHeight ?? symbolType.height[1];
 
             let url = "res/symbol/" + (prop.type ?? "default") + ".json";
             let v: string | undefined = prop.variant ?? symbolType.default;
