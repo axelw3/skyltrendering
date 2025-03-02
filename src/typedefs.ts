@@ -15,7 +15,7 @@ export type BorderFeatureDefinition = {
     paths: {p: string, f?: number | string, s?: number | string}[];
     w?: number;
     h?: number | string;
-    glaze?: boolean;
+    clip?: boolean;
 };
 
 type SignTypeDefinition = {
@@ -178,6 +178,7 @@ export interface NewDrawingArea<T>{
 
     fill(path: Path2D): void;
     stroke(path: Path2D): void;
+    clear(path: Path2D): void;
 
     fillRect(x: number, y: number, w: number, h: number): void;
     fillText(text: string, x: number, y: number): void;

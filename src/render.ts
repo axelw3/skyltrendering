@@ -178,7 +178,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         //ctx.fillStyle="#000";
         //ctx.fillRect(x0, y0, w, h);
 
-        if(side !== "overlay" && !feature.glaze){
+        if(side !== "overlay" && !feature.clip){
             ctx.fillStyle = clr[1];
             ctx.fillRect(x0 + (side === "left" ? (s[1] - bw) : 0) + (lr ? 0 : (bw/2)), y0 + (side === "top" ? (s[1] - bw) : 0) + (lr ? (bw/2) : 0), lr ? bw : (s[0] - bw), lr ? (s[0] - bw) : bw);
         }
@@ -408,6 +408,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         width + padding[0] + padding[2] - 2*bw[0] - 2*bw[2], height + padding[1] + padding[3] - 2*bw[1] - 2*bw[3],
                         [bw[0], bw[1], bw[2], bw[3]],
                         prop.color,
+                        prop.background,
                         prop.borderRadius,
                         [10, 10]
                     );
@@ -612,15 +613,14 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     br,
-                    prop.background,
-                    !!prop.fillCorners
+                    prop.background
                 );
 
                 await renderPromise(ctx, x0 + dx + bs.h[0], y0 + dy + bs.h[1], innerHeight);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];
-                    if(!bf.glaze) return true;
+                    if(!bf.clip) return true;
                     this.renderBorderFeature(ctx, x0, y0, bf, feature[0], bs, innerWidth, innerHeight, prop);
                     return false;
                 });
@@ -631,6 +631,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     prop.color,
+                    prop.fillCorners ? prop.background : (parentProperties?.background ?? null),
                     br
                 );
 

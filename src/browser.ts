@@ -50,6 +50,14 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
         this.ctx.stroke(path);
     }
 
+    clear(path: Path2D): void {
+        let previousMode = this.ctx.globalCompositeOperation ?? "source-over";
+        this.ctx.globalCompositeOperation = "destination-out";
+        this.fillStyle = "#000";
+        this.fill(path);
+        this.ctx.globalCompositeOperation = previousMode;
+    }
+
     fillRect(x: number, y: number, w: number, h: number): void {
         this.ctx.fillRect(x, y, w, h);
     }
