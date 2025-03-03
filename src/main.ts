@@ -1,7 +1,7 @@
 import { SignRenderer as _SignRenderer } from "./render.js";
 import { Vec6, NewDrawingArea, Path2D as _Path2D } from "./typedefs.js";
 
-import { createCanvas, Canvas, Path2D, SKRSContext2D } from "@napi-rs/canvas";
+import { createCanvas, Canvas, Path2D, SKRSContext2D, GlobalFonts } from "@napi-rs/canvas";
 import { readFile } from "fs/promises"
 
 class NodeDrawingArea implements NewDrawingArea<Canvas>{
@@ -81,5 +81,9 @@ export class SignRenderer extends _SignRenderer<Canvas, NodeDrawingArea>{
 
     protected override getText(url: string): Promise<string> {
         return readFile(url, {encoding: "utf8"});
+    }
+
+    public override async registerFont(familyName: string, src: string): Promise<void> {
+        GlobalFonts.registerFromPath(src, familyName);
     }
 };

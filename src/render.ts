@@ -94,6 +94,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     protected abstract createCanvas(w?: number, h?: number): T;
     protected abstract getText(url: string): Promise<string>;
 
+    public abstract registerFont(familyName: string, src: string): Promise<void>;
+
     private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
         let bw = properties.borderWidth,
             br = properties.borderRadius;

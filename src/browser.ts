@@ -86,4 +86,14 @@ export class SignRenderer extends _SignRenderer<HTMLCanvasElement, BrowserDrawin
             req.send();
         });
     }
+
+    public override async registerFont(familyName: string, src: string): Promise<void> {
+        const font = new FontFace(
+            familyName,
+            `url('${src.replace(/\'/g, "\\'")}')`,
+        );
+        document.fonts.add(font);
+
+        await font.load();
+    }
 };
