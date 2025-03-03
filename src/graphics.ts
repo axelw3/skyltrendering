@@ -26,7 +26,7 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
         // Fyll hörn
         if(br > 0){
             let p2 = ctx.createPath2D();
-            p2.ellipse(cx, cy, arx, ary, 0, v2, v1, signX === signY);
+            p2.ellipse(cx, cy, arx + w0/2, ary + w1/2, 0, v2, v1, signX === signY);
             p2.lineTo(cx + signX * rrx + signX * br, cy);
             p2.lineTo(cx + signX * rrx + signX * br, cy + signY * rry + signY * br);
             p2.lineTo(cx, cy + signY * rry + signY * br);
@@ -118,13 +118,17 @@ export function roundedFill<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, i
     let p = ctx.createPath2D();
 
     let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number) => {
-        let arx = borderRadius[i] + borderWidth[(Math.ceil(i / 2) * 2) % 4] / 2,
-            ary = borderRadius[i] + borderWidth[Math.floor(i / 2) * 2 + 1] / 2;
+        let w0 = borderWidth[(Math.ceil(i / 2) * 2) % 4],
+            w1 = borderWidth[Math.floor(i / 2) * 2 + 1],
+            br = borderRadius[i];
+
+        let arx = Math.max(br - w0, 0),
+            ary = Math.max(br - w1, 0);
 
         let startAngle = ((i - 2) * Math.PI) / 2;
         p.ellipse(
-            cx - signX * borderRadius[i], cy - signY * borderRadius[i],
-            arx, ary,
+            cx - signX * arx, cy - signY * ary,
+            arx + w0/2, ary + w1/2,
             0,
             startAngle, startAngle + Math.PI / 2,
             false
