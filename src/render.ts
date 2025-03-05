@@ -1,6 +1,7 @@
 import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5 } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
+import { VectorFont } from "./font.js";
 
 const propertiesDefaults: PropertiesDefaults = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
@@ -95,6 +96,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     protected abstract getText(url: string): Promise<string>;
 
     public abstract registerFont(familyName: string, src: string): Promise<void>;
+
+    public async registerVectorFont(name: string, src: string): Promise<void>{
+        let data = await this.getText(src);
+        let parsed = JSON.parse(data);
+        let font = new VectorFont(parsed);
+        this.vectorFonts.set(name, font);
+    }
 
     private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
         let bw = properties.borderWidth,
@@ -245,6 +253,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     }
 
     private conf: ConfigData;
+    private vectorFonts: Map<string, VectorFont>;
 
     protected resolveTemplate(opt: SignElementOptions): SignElementOptions{
         while(opt.type.startsWith("#")){
@@ -272,6 +281,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             borderFeatures: config.borderFeatures ?? {},
             templates: config.templates ?? {}
         };
+
+        this.vectorFonts = new Map<string, VectorFont>();
     }
 
     private static getInhProperties(prop: SignElementProperties): SignElementBaseProperties{
@@ -393,11 +404,19 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 );
             })).then(() => {});
         }else if(opt.type === "vagnr" || opt.type === "text"){
-            let ctx_temp = this.createCanvas();
+            let vectorFont = this.vectorFonts.get(prop.font.slice(1, -1));
 
-            ctx_temp.font = "32px " + prop.font;
+            const fontSize = 32;
+            const fontStr = `${fontSize}px ${prop.font}`;
 
-            width = Math.floor(ctx_temp.measureText(prop.value ?? "").width);
+            if(vectorFont !== undefined){
+                width = Math.floor(vectorFont.measureText(prop.value ?? "", fontSize).width);
+            }else{
+                let ctx_temp = this.createCanvas();
+                ctx_temp.font = fontStr;
+                width = Math.floor(ctx_temp.measureText(prop.value ?? "").width);
+            }
+
             height = prop.lineHeight;
 
             renderPromise = (ctx, x0, y0, _) => new Promise(res => {
@@ -416,11 +435,15 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     );
                 }
 
-                ctx.font = "32px " + prop.font;
-                ctx.textBaseline = "middle";
+                if(vectorFont !== undefined){
+                    vectorFont.fillText(ctx, x0 + padding[0], y0 + firstLastCenter[1], prop.value ?? "", prop.color, fontSize);
+                }else{
+                    ctx.font = fontStr;
+                    ctx.textBaseline = "middle";
 
-                ctx.fillStyle = prop.color;
-                ctx.fillText(prop.value ?? "", x0 + padding[0], y0 + firstLastCenter[1]);
+                    ctx.fillStyle = prop.color;
+                    ctx.fillText(prop.value ?? "", x0 + padding[0], y0 + firstLastCenter[1]);
+                }
 
                 res();
             });
