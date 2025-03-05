@@ -44,6 +44,7 @@ export type SignElementBaseProperties = {
     borderRadius: number[] | number;
     color: string;
     font: string;
+    fontSize: number;
     lineHeight: number;
     lineSpacing: number;
     xSpacing: number;
@@ -109,10 +110,7 @@ export type PropertiesDefaults = {
     defaults: {[key: string]: SignElementUserProperties};
 };
 
-export type ConfigData = {
-    // Olika standardegenskaper
-    properties: PropertiesDefaults,
-
+export type ConfigData = PropertiesDefaults & {
     // Skylttyper ("symboler med noder")
     signTypes: {
         [key: string]: SignTypeDefinition;

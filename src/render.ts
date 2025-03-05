@@ -5,7 +5,7 @@ import { VectorFont } from "./font.js";
 
 const propertiesDefaults: PropertiesDefaults = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
-    "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "font": "sans-serif", "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
+    "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
     "defaults": {
         ".": { "borderWidth": 4, "padding": 8 },
         "skylt": { "padding": 6, "blockDisplay": false, "passAnchor": false, "alignContentsV": "middle" },
@@ -275,7 +275,9 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
     public constructor(config: UserConfigData){
         this.conf = {
-            properties: Object.assign({}, propertiesDefaults, config.properties),
+            globalDefaults: config.globalDefaults ?? propertiesDefaults.globalDefaults,
+            rootDefaults: config.rootDefaults ?? propertiesDefaults.rootDefaults,
+            defaults: config.defaults ?? propertiesDefaults.defaults,
             signTypes: config.signTypes ?? {},
             symbols: config.symbols ?? {},
             borderFeatures: config.borderFeatures ?? {},
@@ -286,8 +288,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     }
 
     private static getInhProperties(prop: SignElementProperties): SignElementBaseProperties{
-        const { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing } = prop;
-        return { background, borderRadius, color, font, lineHeight, lineSpacing, xSpacing };
+        const { background, borderRadius, color, font, fontSize, lineHeight, lineSpacing, xSpacing } = prop;
+        return { background, borderRadius, color, font, fontSize, lineHeight, lineSpacing, xSpacing };
     }
 
     private _render(opt: SignElementOptions, parentProperties: SignElementBaseProperties | null): RenderingResult<C, T>{
@@ -297,9 +299,9 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         let prop: SignElementProperties = Object.assign(
             {},
-            this.conf.properties.globalDefaults,
-            this.conf.properties.defaults[opt.type.startsWith(".") ? "." : opt.type],
-            parentProperties === null ? this.conf.properties.rootDefaults : parentProperties,
+            this.conf.globalDefaults,
+            this.conf.defaults[opt.type.startsWith(".") ? "." : opt.type],
+            parentProperties === null ? this.conf.rootDefaults : parentProperties,
             opt.properties
         );
 
@@ -328,7 +330,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     c2.row = ++j;
                     w.push(0);
                     h.push(0);
-                    totalLineSpacing += (prop.blockDisplay ? prop.lineSpacing : prop.lineSpacing);
+                    totalLineSpacing += prop.lineSpacing;
                 }
 
                 if(!c2.isn){
@@ -406,7 +408,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         }else if(opt.type === "vagnr" || opt.type === "text"){
             let vectorFont = this.vectorFonts.get(prop.font.slice(1, -1));
 
-            const fontSize = 32;
+            const fontSize = prop.fontSize;
             const fontStr = `${fontSize}px ${prop.font}`;
 
             if(vectorFont !== undefined){
