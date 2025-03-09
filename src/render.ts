@@ -1,4 +1,4 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties } from "./typedefs.js"
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2 } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
@@ -110,7 +110,27 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         this.vectorFonts.set(name, font);
     }
 
-    private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
+    private fitContents(width: number, height: number, properties: SignElementProperties): Vec2{
+        let bw = properties.borderWidth;
+
+        let innerWidth = width - bw[0] - bw[2],
+            innerHeight = height - bw[1] - bw[3];
+
+        while(true){
+            let bs = this.borderSize(innerWidth, innerHeight, properties);
+            let shX = (bs.h[0] + bs.h[2] + innerWidth) > width,
+                shY = (bs.h[1] + bs.h[3] + innerHeight) > height;
+
+            if(shX) innerWidth--;
+
+            if(shY) innerHeight--;
+            else if(!shX) break;
+        }
+
+        return [innerWidth, innerHeight];
+    }
+
+    private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties): BorderDimensions{
         let bw = properties.borderWidth,
             br = properties.borderRadius,
             bf = properties.borderFeatures;
@@ -308,7 +328,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         };
     }
 
-    private _render(opt: SignElementOptions, inhProperties: SignElementBaseProperties & SignElementUserProperties, dimProperties: SignElementDimProperties/*, parentUserProperties: SignElementUserProperties | null*/): RenderingResult<C, T>{
+    private _render(opt: SignElementOptions, inhProperties: SignElementBaseProperties & SignElementUserProperties, dimProperties: SignElementDimProperties, targetDim?: Vec2): RenderingResult<C, T>{
         let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         opt = this.resolveTemplate(opt);
@@ -424,19 +444,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 if(!c2.isn){
 
-                let dx = 0, iw = prop.blockDisplay ? (width - c2.bs[0] - c2.bs[2]) : c2.r.w;
-
-                if(prop.blockDisplay){
-                    dx += SignRenderer.calculateAlignmentOffset(c2.p?.alignContents, w[c2.row], iw + c2.bs[0] + c2.bs[2]);
-                }
-
                 pro = c2.r.doRender(
                     ctx,
                     x0 + padding[0] + c2.x, y0 + padding[1] + y,
-                    dx,
+                    prop.blockDisplay ? SignRenderer.calculateAlignmentOffset(c2.p?.alignContents, w[c2.row], width) : 0,
                     prop.alignContentsV,
                     h[c2.row] - c2.bs[1] - c2.bs[3],
-                    iw
+                    prop.blockDisplay ? (width - c2.bs[0] - c2.bs[2]) : c2.r.w
                 );
 
                 }
@@ -599,9 +613,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let x1 = res.x - boundingBox[0],
                     y1 = res.y - boundingBox[2];
 
-                let dx = 0;
-
-                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, dx, prop.alignContentsV);
+                return res.renderPromise.doRender(ctx, x0 + padding[0] + x1, y0 + padding[1] + y1, 0, prop.alignContentsV);
             })).then(() => {
                 if(t.width === 0 || t.height === 0) return;
 
@@ -632,8 +644,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         const   iw0 = width + padding[0] + padding[2],
                 ih0 = height + padding[1] + padding[3];
 
-        let bs = this.borderSize(iw0, ih0, prop);
-
         if(firstLastCenter.some(isNaN)){
             firstLastCenter = [
                 Math.floor(iw0 / 2), Math.floor(ih0 / 2),
@@ -641,24 +651,38 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             ];
         }
 
+        let iw1 = iw0, ih1 = ih0;
+
+        if(targetDim !== undefined){
+            [iw1, ih1] = this.fitContents(targetDim[0], targetDim[1], prop);
+
+            firstLastCenter[0] += Math.ceil((iw1 - iw0) / 2);
+            firstLastCenter[1] += Math.ceil((ih1 - ih0) / 2);
+            firstLastCenter[2] += Math.ceil((iw1 - iw0) / 2);
+            firstLastCenter[3] += Math.ceil((ih1 - ih0) / 2);
+        }
+
+        let bs = this.borderSize(iw1, ih1, prop);
+
         if(maxHeight < height) maxHeight = height;
 
         return {
             flc: firstLastCenter,
-            w: iw0,
+            w: iw0, // TODO: borde returnera iw1 & ih1 här?
             h: ih0,
             bs: bs.h,
-            doRender: async (ctx: T, x0: number, y0: number, dx: number, verticalAlign: AlignModeY = "middle", maxInnerHeight: number = ih0, iw = 0) => {
-                const dy = 0;
-                const innerWidth = iw === 0 ? iw0 : iw;
-                let innerHeight = (prop.grow && ih0 < maxInnerHeight) ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxHeight) : ih0;
+            doRender: async (ctx: T, x0: number, y0: number, dx: number, verticalAlign: AlignModeY = "middle", maxInnerHeight: number = ih1, iw: number = iw1) => {
+                let dy = 0;
+                let innerHeight = (prop.grow && ih1 < maxInnerHeight) ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxHeight) : ih1;
 
                 switch (verticalAlign) {
                     case "middle":
                         y0 += Math.floor((maxInnerHeight - innerHeight) / 2);
+                        dy += Math.floor((ih1 - ih0) / 2);
                         break;
                     case "bottom":
                         y0 += maxInnerHeight - innerHeight;
+                        dy += ih1 - ih0;
                         break;
                 }
 
@@ -678,7 +702,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 roundedFill(
                     ctx,
                     x0 + bs.h[0], y0 + bs.h[1],
-                    innerWidth, innerHeight,
+                    iw, innerHeight,
                     bw,
                     br,
                     prop.background
@@ -689,14 +713,14 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];
                     if(!bf.clip) return true;
-                    this.renderBorderFeature(ctx, x0, y0, bf, feature[0], bs, innerWidth, innerHeight, prop);
+                    this.renderBorderFeature(ctx, x0, y0, bf, feature[0], bs, iw, innerHeight, prop);
                     return false;
                 });
 
                 roundedFrame(
                     ctx,
                     x0 + bs.h[0], y0 + bs.h[1],
-                    innerWidth, innerHeight,
+                    iw, innerHeight,
                     bw,
                     prop.color,
                     prop.fillCorners ? prop.background : (inhProperties.background ?? null),
@@ -704,25 +728,30 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 );
 
                 bfts.forEach(feature => {
-                    this.renderBorderFeature(ctx, x0, y0, this.conf.borderFeatures[feature[1]], feature[0], bs, innerWidth, innerHeight, prop);
+                    this.renderBorderFeature(ctx, x0, y0, this.conf.borderFeatures[feature[1]], feature[0], bs, iw, innerHeight, prop);
                 });
             }
         };
     }
 
-    public async render(data: SignElementOptions): Promise<C>{
+    public async render(data: SignElementOptions, dim?: Vec2): Promise<C>{
         let r = this._render(data, this.conf.rootDefaults, {
             padding: to4EForm(this.conf.rootDefaults.padding ?? this.conf.globalDefaults.padding),
             borderRadius: to4EForm(this.conf.rootDefaults.borderRadius),
             borderWidth: to5EForm(this.conf.rootDefaults.borderWidth ?? this.conf.globalDefaults.borderWidth)
-        });
+        }, dim);
 
         let bs = r.bs;
-        let canv = this.createCanvas(r.w + bs[0] + bs[2], r.h + bs[1] + bs[3]);
+
+        dim ??= [r.w + bs[0] + bs[2], r.h + bs[1] + bs[3]];
+
+        let canv = this.createCanvas(dim[0], dim[1]);
 
         if(canv === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
 
-        await r.doRender(canv, 0, 0, 0);
+        const dx = SignRenderer.calculateAlignmentOffset("center", r.w + bs[0] + bs[2], dim[0]);
+
+        await r.doRender(canv, 0, 0, dx, "middle");
         return canv.canv;
     }
 }
