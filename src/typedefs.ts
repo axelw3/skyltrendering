@@ -5,6 +5,12 @@ export type Vec4 = [number, number, number, number];
 export type Vec5 = [number, number, number, number, number];
 export type Vec6 = [number, number, number, number, number, number];
 
+export type AlignModeX = "left" | "center" | "right";
+export type AlignModeY = "top" | "middle" | "bottom";
+
+type NodeAnchorX = AlignModeX | "center-first" | "center-last";
+type NodeAnchorY = AlignModeY | "middle-first" | "middle-last";
+
 /**
  * Designer sparas i "nedre kant"-form, dvs.
  * orienterade på motsvarande sätt som klammern
@@ -23,8 +29,8 @@ type SignTypeDefinition = {
         [key: string]: {
             x: number[];
             y: number[];
-            ax?: string;
-            ay?: string;
+            ax?: NodeAnchorX;
+            ay?: NodeAnchorY;
         }
     };
     width: number;
@@ -41,7 +47,7 @@ type SignSymbolDefinition = {
 // properties som ärvs (måste därför specificeras av rootDefaults)
 export type SignElementBaseProperties = {
     background: string;
-    borderRadius: number[] | number;
+    borderRadius: (number | null)[] | number | null;
     color: string;
     font: string;
     fontSize: number;
@@ -52,16 +58,16 @@ export type SignElementBaseProperties = {
 
 // properties (utöver de i SignElementBaseProperties) som alltid måste finnas
 // dessa måste alltså specificeras av globalDefaults
-type SignElementRequiredProperties = {
-    borderFeatures: {[key: string]: string;};
-    borderWidth: number[] | number;
-    padding: number[] | number;
+export type SignElementRequiredProperties = {
+    borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
+    borderWidth: (number | null)[] | number | null;
+    padding: (number | null)[] | number | null;
 };
 
 // properties som inte alltid finns i this.properties (dvs. aldrig obligatoriska)
 type SignElementOptionalProperties = {
-    alignContents: string;
-    alignContentsV: string;
+    alignContents: AlignModeX;
+    alignContentsV: AlignModeY;
     blockDisplay: boolean;
     dashedInset: boolean;
     fillCorners: boolean;
@@ -74,19 +80,24 @@ type SignElementOptionalProperties = {
 };
 
 // properties som kan specificeras av användaren (inga är obligatoriska)
-type SignElementUserProperties = Partial<SignElementBaseProperties & SignElementRequiredProperties & SignElementOptionalProperties>;
+export type SignElementUserProperties = Partial<SignElementBaseProperties & SignElementRequiredProperties & SignElementOptionalProperties>;
+
+export type SignElementDimProperties = {
+    borderRadius: Vec4;
+    borderWidth: Vec5;
+    padding: Vec4;
+};
 
 // formatet som this.properties följer
 export interface SignElementProperties extends SignElementBaseProperties, SignElementRequiredProperties, Partial<SignElementOptionalProperties>{
-    borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
     borderRadius: Vec4;
     borderWidth: Vec5;
     padding: Vec4;
 };
 
 type SignElementAnchor = {
-    x?: string;
-    y?: string;
+    x?: NodeAnchorX;
+    y?: NodeAnchorY;
 };
 
 type SignElementNode = {
@@ -97,7 +108,7 @@ type SignElementNode = {
 // data som ges av användaren
 export type SignElementOptions = {
     format?: number; // not currently used
-    type: string;
+    type: "skylt" | "text" | "vagnr" | "newline" | "symbol" | `.${string}` | "group";
     properties?: SignElementUserProperties;
     elements?: SignElementOptions[];
     nodes?: {[key: string]: SignElementNode};
@@ -139,7 +150,7 @@ export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     w: number;
     h: number;
     bs: Vec4;
-    doRender: (ctx: T, x0: number, y0: number, dx: number, maxInnerHeight: number, verticalAlign?: string, iw?: number) => Promise<void>;
+    doRender: (ctx: T, x0: number, y0: number, dx: number, verticalAlign?: AlignModeY, maxInnerHeight?: number, iw?: number) => Promise<void>;
 };
 
 export interface Path2D{
