@@ -9,7 +9,7 @@ const propertiesDefaults: PropertiesDefaults = {
     "defaults": {
         ".": { "padding": 8 },
         "group": { "background": "transparent", "borderWidth": 0, "lineSpacing": 0, "padding": 0/*6*/ }, // dessa värden ärvs aldrig vidare
-        "skylt": { "padding": 6, "alignContentsV": "middle" },
+        "skylt": { "alignContentsV": "middle", "padding": 6 },
         "vagnr": { "borderWidth": 3, "padding": [14, 2] },
         "text": {},
         "newline": {},
@@ -155,12 +155,14 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         return bs;
     }
 
-    private static calculateAlignmentOffset(alignMode: AlignModeX | undefined, innerWidth: number, outerWidth: number){
+    private static calculateAlignmentOffset(alignMode: AlignModeX | AlignModeY | undefined, innerSide: number, outerSide: number){
         switch(alignMode){
             case "center":
-                return Math.floor((outerWidth - innerWidth) / 2);
+            case "middle":
+                return Math.floor((outerSide - innerSide) / 2);
             case "right":
-                return outerWidth - innerWidth;
+            case "bottom":
+                return outerSide - innerSide;
             default:
                 // "left" or unknown value (left-aligned is the default)
                 return 0;
@@ -414,8 +416,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             contentsHeight = h.reduce((a, b) => a + b, totalLineSpacing);
 
             ch = ch.map(c2 => {
-                if(!c2.isn){
-                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentBoxWidth ?? contentsWidth);
+                if(!c2.isn && !prop.blockDisplay){
+                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentsWidth);
                 }
 
                 return c2;
@@ -442,7 +444,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 firstLastCenter[3] += Math.floor(-h[h.length - 1] / 2);
             }
 
-            let y = 0;
+            let y = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, contentBoxHeight ?? contentsHeight);
 
             renderPromise = (ctx, x0, y0, _0, _1) => Promise.all(ch.map((c2, i, els) => {
                 let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
@@ -450,24 +452,15 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let pro: Promise<void> | undefined;
 
                 if(!c2.isn){
+                    let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
 
-                let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
-
-                pro = c2.r.doRender(
-                    ctx,
-                    x0 + padding[0] + c2.x, y0 + padding[1] + y,
-                    prop.alignContentsV,
-                    iw,
-                    h[c2.row] - c2.bs[1] - c2.bs[3]
-                );
-
-                if(prop.blockDisplay){
-                    ctx.fillStyle = "rgba(0,255,0,.5)";
-                    ctx.fillRect(x0 + padding[0] + c2.x + c2.bs[0], y0 + padding[1] + c2.bs[1] + y, iw, h[c2.row] - c2.bs[1] - c2.bs[3]);
-                    ctx.fillStyle = "rgba(255,0,0,.4)";
-                    ctx.fillRect(x0 + padding[0] + c2.x + c2.bs[0] + 1, y0 + padding[1] + c2.bs[1] + y + 1, iw - 2, h[c2.row] - c2.bs[1] - c2.bs[3] - 2);
-                }
-
+                    pro = c2.r.doRender(
+                        ctx,
+                        x0 + padding[0] + c2.x, y0 + padding[1] + y,
+                        prop.alignContentsV,
+                        iw,
+                        h[c2.row] - c2.bs[1] - c2.bs[3]
+                    );
                 }
 
                 if(lineBreakAfter){
@@ -494,21 +487,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             contentsHeight = prop.lineHeight;
 
             renderPromise = (ctx, x0, y0, _0, _1) => new Promise(res => {
-                if(prop.dashedInset){
-                    let bw = prop.borderWidth;
-
-                    roundedFrame(
-                        ctx,
-                        x0 + 2*bw[0], y0 + 2*bw[1],
-                        (contentBoxWidth ?? contentsWidth) + padding[0] + padding[2] - 2*bw[0] - 2*bw[2], (contentBoxHeight ?? contentsHeight) + padding[1] + padding[3] - 2*bw[1] - 2*bw[3],
-                        [bw[0], bw[1], bw[2], bw[3]],
-                        prop.color,
-                        prop.background,
-                        prop.borderRadius,
-                        [10, 10]
-                    );
-                }
-
                 if(vectorFont !== undefined){
                     vectorFont.fillText(ctx, x0 + padding[0], y0 + firstLastCenter[1], prop.value ?? "", prop.color, fontSize);
                 }else{
@@ -675,18 +653,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             minInnerWidth: iw0,
             minInnerHeight: ih0,
             bs: bs.h,
-            doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY = "middle", innerWidth = iw0, maxInnerHeight: number = ih0) => {
-                const dy = 0;
+            doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0) => {
                 let innerHeight = (prop.grow && ih0 < maxInnerHeight) ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
 
-                switch (verticalAlign) {
-                    case "middle":
-                        y0 += Math.floor((maxInnerHeight - innerHeight) / 2);
-                        break;
-                    case "bottom":
-                        y0 += maxInnerHeight - innerHeight;
-                        break;
-                }
+                y0 += SignRenderer.calculateAlignmentOffset(verticalAlign, innerHeight, maxInnerHeight);
 
                 // tag bort rundade hörn på sidor med hela kantutsmyckningar
                 let bfs = [prop.borderFeatures.left, prop.borderFeatures.top, prop.borderFeatures.right, prop.borderFeatures.bottom].map(bf => {
@@ -710,9 +680,9 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     prop.background
                 );
 
-                let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentBoxWidth ?? contentsWidth, innerWidth - padding[0] - padding[2]);
+                let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentsWidth, innerWidth - padding[0] - padding[2]);
 
-                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + dy + bs.h[1], innerWidth, innerHeight);
+                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1], innerWidth - 2*dx, innerHeight);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];
@@ -730,6 +700,21 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     prop.fillCorners ? prop.background : (inhProperties.background ?? null),
                     br
                 );
+
+                if(prop.dashedInset){
+                    let bw2 = prop.borderWidth;
+
+                    roundedFrame(
+                        ctx,
+                        x0 + bs.h[0] + 2*bw2[0], y0 + bs.h[1] + 2*bw2[1],
+                        innerWidth - 2*bw2[0] - 2*bw2[2], innerHeight - 2*bw2[1] - 2*bw2[3],
+                        [bw2[0], bw2[1], bw2[2], bw2[3]],
+                        prop.color,
+                        prop.background,
+                        prop.borderRadius,
+                        [10, 10]
+                    );
+                }
 
                 bfts.forEach(feature => {
                     this.renderBorderFeature(ctx, x0, y0, this.conf.borderFeatures[feature[1]], feature[0], bs, innerWidth, innerHeight, prop);
