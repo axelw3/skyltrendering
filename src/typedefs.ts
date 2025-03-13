@@ -147,10 +147,10 @@ export type UserConfigData = Partial<ConfigData>;
 
 export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     flc: Vec4;
-    w: number;
-    h: number;
+    minInnerWidth: number;
+    minInnerHeight: number;
     bs: Vec4;
-    doRender: (ctx: T, x0: number, y0: number, dx: number, verticalAlign?: AlignModeY, maxInnerHeight?: number, iw?: number) => Promise<void>;
+    doRender: (ctx: T, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number) => Promise<void>;
 };
 
 export interface Path2D{
