@@ -386,7 +386,14 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                             borderWidth: to5EForm(opt.properties?.borderWidth ?? null, dimProperties.borderWidth)
                         }
                 );
-                let c2 = { isn: c.type === "newline", r: re, bs: re.bs, row: j, x: 0, p: c.properties };
+                let c2 = {
+                    isn: c.type === "newline",
+                    r: re,
+                    bs: re.bs,
+                    row: j,
+                    x: 0,
+                    p: c.properties
+                };
 
                 let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
 
@@ -415,13 +422,24 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             contentsWidth = Math.max(...w);
             contentsHeight = h.reduce((a, b) => a + b, totalLineSpacing);
 
+            let extraH = 0, dx = 0;
+            if(contentBoxHeight !== null && j === 0){
+                extraH = contentBoxHeight - contentsHeight;
+                contentsHeight = h[0] = contentBoxHeight;
+            }
+
             ch = ch.map(c2 => {
                 if(!c2.isn && !prop.blockDisplay){
-                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentsWidth);
+                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentsWidth) + dx;
+                    if(c2.p?.cover){
+                        dx += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
+                    }
                 }
 
                 return c2;
             });
+
+            contentsWidth += dx;
 
             // mitt-x (element), se även if-sats nedan
             // mitt-y (rad), se även if-sats nedan
@@ -444,7 +462,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 firstLastCenter[3] += Math.floor(-h[h.length - 1] / 2);
             }
 
-            let y = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, contentBoxHeight ?? contentsHeight);
+            let y = 0;
 
             renderPromise = (ctx, x0, y0, _0, _1) => Promise.all(ch.map((c2, i, els) => {
                 let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
@@ -453,6 +471,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 if(!c2.isn){
                     let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
+                    if(c2.p?.cover) iw += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
 
                     pro = c2.r.doRender(
                         ctx,
@@ -512,7 +531,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             renderPromise = (ctx, x0, y0, _, maxInnerHeight) => this.drawVec(
                 ctx, url, prop.color, v === undefined ? [] : [v],
                 x0 + padding[0], y0 + padding[1], // dx, dy
-                symbolType.width, maxInnerHeight - padding[1] - padding[3] // dw=sw, dh=sh
+                symbolType.width, // dw=sw
+                prop.grow ? Math.min(maxInnerHeight - padding[1] - padding[3], maxContentsHeight) : symbolType.height[0] // dh=sh
             );
         }else if(opt.type === "newline"){
             contentsWidth = 0;
@@ -563,10 +583,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         leftX = Math.floor((lx[0] + lx[1]) / 2 - Math.floor(rse[0] / 2));
                         break;
                     case "center-first":
-                        leftX = Math.floor((lx[0] + lx[1]) / 2) - result.flc[0];
+                        leftX = Math.floor((lx[0] + lx[1]) / 2) - result.flc[0] - bs[0];
                         break;
                     case "center-last":
-                        leftX = Math.floor((lx[0] + lx[1]) / 2) - result.flc[2];
+                        leftX = Math.floor((lx[0] + lx[1]) / 2) - result.flc[2] - bs[0];
                         break;
                     default:
                         leftX = lx[0];
@@ -654,7 +674,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             minInnerHeight: ih0,
             bs: bs.h,
             doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0) => {
-                let innerHeight = (prop.grow && ih0 < maxInnerHeight) ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
+                let innerHeight = prop.grow ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
+
+                if(prop.grow) contentsHeight = innerHeight - padding[1] - padding[3];
+                if(prop.cover) innerHeight = maxInnerHeight;
 
                 y0 += SignRenderer.calculateAlignmentOffset(verticalAlign, innerHeight, maxInnerHeight);
 
@@ -682,7 +705,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentsWidth, innerWidth - padding[0] - padding[2]);
 
-                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1], innerWidth - 2*dx, innerHeight);
+                let dy = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, innerHeight - padding[1] - padding[3]);
+                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, innerWidth - 2*dx, innerHeight);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];

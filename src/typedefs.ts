@@ -69,14 +69,15 @@ type SignElementOptionalProperties = {
     alignContents: AlignModeX;
     alignContentsV: AlignModeY;
     blockDisplay: boolean;
+    cover: boolean;
     dashedInset: boolean;
     fillCorners: boolean;
     grow: boolean;
+    maxHeight: number; // symbol
     passAnchor: boolean;
     type: string; // symbol
     value: string; // text, vagnr
     variant: string; // symbol
-    maxHeight: number; // symbol
 };
 
 // properties som kan specificeras av användaren (inga är obligatoriska)
