@@ -75,6 +75,7 @@ type SignElementOptionalProperties = {
     grow: boolean;
     maxHeight: number; // symbol
     passAnchor: boolean;
+    scale: number;
     type: string; // symbol
     value: string; // text, vagnr
     variant: string; // symbol

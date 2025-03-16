@@ -5,15 +5,15 @@ import { VectorFont } from "./font.js";
 
 const propertiesDefaults: PropertiesDefaults = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
-    "rootDefaults": { "background": "#06a", "color": "white", "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
+    "rootDefaults": { "background": "#06a", "color": "white", "cover": true, "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
     "defaults": {
         ".": { "padding": 8 },
-        "group": { "background": "transparent", "borderWidth": 0, "lineSpacing": 0, "padding": 0/*6*/ }, // dessa värden ärvs aldrig vidare
+        "group": { "background": "transparent", "borderWidth": 0, "lineSpacing": 0, "padding": 0 }, // dessa värden ärvs aldrig vidare
         "skylt": { "alignContentsV": "middle", "padding": 6 },
         "vagnr": { "borderWidth": 3, "padding": [14, 2] },
         "text": {},
         "newline": {},
-        "symbol": { "padding": 5, "type": "default", "grow": true }
+        "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 5, "type": "default" }
     }
 };
 
@@ -523,9 +523,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         }else if(opt.type === "symbol"){
             let symbolType = this.conf.symbols[prop.type ?? ""];
 
-            contentsWidth = symbolType.width;
-            contentsHeight = symbolType.height[0];
-            maxContentsHeight = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
+            contentsWidth = symbolType.width * (prop.scale ?? 1);
+            contentsHeight = symbolType.height[0] * (prop.scale ?? 1);
+            let maxSymH = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
+            maxContentsHeight = maxSymH * (prop.scale ?? 1);
 
             let url = "res/symbol/" + (prop.type ?? "default") + ".json";
             let v: string | undefined = prop.variant ?? symbolType.default;
@@ -537,7 +538,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 maxInnerHeight - padding[1] - padding[3], // dh
                 0, 0,
                 symbolType.width, // sw
-                Math.min(maxInnerHeight - padding[1] - padding[3], maxContentsHeight) // sh
+                Math.min((maxInnerHeight - padding[1] - padding[3]) / (prop.scale ?? 1), maxSymH) // sh
             );
         }else if(opt.type === "newline"){
             contentsWidth = 0;
