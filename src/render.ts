@@ -478,7 +478,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         x0 + padding[0] + c2.x, y0 + padding[1] + y,
                         prop.alignContentsV,
                         iw,
-                        h[c2.row] - c2.bs[1] - c2.bs[3]
+                        h[c2.row] - c2.bs[1] - c2.bs[3],
+                        h[c2.row] - c2.bs[1] - c2.bs[3] - extraH
                     );
                 }
 
@@ -523,16 +524,19 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             contentsWidth = symbolType.width;
             contentsHeight = symbolType.height[0];
-            maxContentsHeight = prop.maxHeight ?? symbolType.height[1];
+            maxContentsHeight = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
 
             let url = "res/symbol/" + (prop.type ?? "default") + ".json";
             let v: string | undefined = prop.variant ?? symbolType.default;
 
-            renderPromise = (ctx, x0, y0, _, maxInnerHeight) => this.drawVec(
+            renderPromise = (ctx, x0, y0, maxInnerWidth, maxInnerHeight) => this.drawVec(
                 ctx, url, prop.color, v === undefined ? [] : [v],
                 x0 + padding[0], y0 + padding[1], // dx, dy
-                symbolType.width, // dw=sw
-                prop.grow ? Math.min(maxInnerHeight - padding[1] - padding[3], maxContentsHeight) : symbolType.height[0] // dh=sh
+                maxInnerWidth - padding[0] - padding[2], // dw
+                maxInnerHeight - padding[1] - padding[3], // dh
+                0, 0,
+                symbolType.width, // sw
+                Math.min(maxInnerHeight - padding[1] - padding[3], maxContentsHeight) // sh
             );
         }else if(opt.type === "newline"){
             contentsWidth = 0;
@@ -673,8 +677,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             minInnerWidth: iw0,
             minInnerHeight: ih0,
             bs: bs.h,
-            doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0) => {
-                let innerHeight = prop.grow ? Math.min(maxInnerHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
+            doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0, rowInnerElHeight: number = ih0) => {
+                let innerHeight = prop.grow ? Math.min(rowInnerElHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
 
                 if(prop.grow) contentsHeight = innerHeight - padding[1] - padding[3];
                 if(prop.cover) innerHeight = maxInnerHeight;
@@ -706,7 +710,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentsWidth, innerWidth - padding[0] - padding[2]);
 
                 let dy = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, innerHeight - padding[1] - padding[3]);
-                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, innerWidth - 2*dx, innerHeight);
+                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, contentsWidth + padding[0] + padding[2], contentsHeight + padding[1] + padding[3]);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];

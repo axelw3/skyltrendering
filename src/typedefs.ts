@@ -40,7 +40,7 @@ type SignTypeDefinition = {
 
 type SignSymbolDefinition = {
     width: number;
-    height: number[];
+    height: Vec2;
     default?: string;
 };
 
@@ -151,7 +151,7 @@ export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     minInnerWidth: number;
     minInnerHeight: number;
     bs: Vec4;
-    doRender: (ctx: T, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number) => Promise<void>;
+    doRender: (ctx: T, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number, rowInnerElHeight?: number) => Promise<void>;
 };
 
 export interface Path2D{
