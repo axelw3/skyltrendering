@@ -431,9 +431,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             ch = ch.map(c2 => {
                 if(!c2.isn && !prop.blockDisplay){
                     c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentsWidth) + dx;
-                    if(c2.p?.cover){
-                        dx += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
-                    }
                 }
 
                 return c2;
@@ -471,7 +468,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 if(!c2.isn){
                     let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
-                    if(c2.p?.cover) iw += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
 
                     pro = c2.r.doRender(
                         ctx,
