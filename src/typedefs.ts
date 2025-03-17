@@ -69,6 +69,7 @@ type SignElementOptionalProperties = {
     alignContents: AlignModeX;
     alignContentsV: AlignModeY;
     blockDisplay: boolean;
+    columns: number[];
     cover: boolean;
     dashedInset: boolean;
     fillCorners: boolean;

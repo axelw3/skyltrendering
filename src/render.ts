@@ -375,6 +375,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             let totalLineSpacing = 0;
 
+            let colIds: number[] = (prop.columns ?? []);
+            let cols: {x: number, w: number, els: number[]}[] = colIds.map(() => ({x: 0, w: 0, els: []}));
+
+            let k = 0;
             let ch = (opt.elements ?? []).map((c, i, els) => {
                 let re = this._render(
                     c, inh,
@@ -391,19 +395,28 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     r: re,
                     bs: re.bs,
                     row: j,
-                    x: 0,
+                    w: 0,
                     p: c.properties
                 };
 
                 let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
 
                 if(!c2.isn){
-                    if(w[j] > 0){
+                    let ew = c2.r.minInnerWidth + c2.bs[0] + c2.bs[2];
+
+                    if(k > 0){
                         w[j] += prop.xSpacing;
                     }
 
-                    c2.x = w[j];
-                    w[j] += c2.r.minInnerWidth + c2.bs[0] + c2.bs[2];
+                    if(colIds.includes(k)){
+                        let l = colIds.indexOf(k);
+                        cols[l].x = w[j] = Math.max(cols[l].x, w[j]); // ev. xSpacing t.v. redan inräknad
+                        cols[l].w = ew = Math.max(cols[l].w, ew); // ev. xSpacing räknas INTE med
+                        cols[l].els.push(i);
+                    }
+
+                    w[j] += ew;
+                    c2.w += ew;
 
                     let h0 = c2.r.minInnerHeight + c2.bs[1] + c2.bs[3];
                     if(h0 > h[j]) h[j] = h0;
@@ -414,39 +427,50 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     w.push(0);
                     h.push(0);
                     totalLineSpacing += prop.lineSpacing;
+                    k = 0;
+                    return c2;
                 }
 
+                k++;
                 return c2;
             });
 
-            contentsWidth = Math.max(...w);
+            cols.forEach(c => {
+                c.els.forEach(i => {
+                    let ow = ch[i].w;
+                    w[ch[i].row] += c.w - ow;
+                    ch[i].w = c.w;
+                });
+            });
+
             contentsHeight = h.reduce((a, b) => a + b, totalLineSpacing);
 
-            let extraH = 0, dx = 0;
+            let extraH = 0;
             if(contentBoxHeight !== null && j === 0){
                 extraH = contentBoxHeight - contentsHeight;
                 contentsHeight = h[0] = contentBoxHeight;
             }
 
             ch = ch.map(c2 => {
-                if(!c2.isn && !prop.blockDisplay){
-                    c2.x += SignRenderer.calculateAlignmentOffset(prop.alignContents, w[c2.row], contentsWidth) + dx;
-                    if(c2.p?.cover){
-                        dx += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
-                    }
+                if(!c2.isn && !prop.blockDisplay && c2.p?.cover){
+                    let dw = Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
+                    c2.w += dw;
+                    w[c2.row] += dw;
                 }
 
                 return c2;
             });
 
-            contentsWidth += dx;
+            contentsWidth = Math.max(...w);
+
+            let rx = new Array(j + 1).fill(0).map((_, r) => SignRenderer.calculateAlignmentOffset(prop.alignContents, w[r], contentsWidth));
 
             // mitt-x (element), se även if-sats nedan
             // mitt-y (rad), se även if-sats nedan
             firstLastCenter = [
-                padding[0] + ch[0].x + ch[0].bs[0],
+                padding[0] + rx[0] + ch[0].bs[0],
                 padding[1],
-                padding[0] + ch[ch.length - 1].x + ch[ch.length - 1].bs[0],
+                padding[0] + rx[j] + w[j] - ch[ch.length - 1].w + ch[ch.length - 1].bs[0],
                 (contentBoxHeight ?? contentsHeight) + padding[1]
             ];
 
@@ -462,7 +486,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 firstLastCenter[3] += Math.floor(-h[h.length - 1] / 2);
             }
 
-            let y = 0;
+            let x = 0, y = 0;
 
             renderPromise = (ctx, x0, y0, _0, _1) => Promise.all(ch.map((c2, i, els) => {
                 let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
@@ -476,17 +500,20 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                     pro = c2.r.doRender(
                         ctx,
-                        x0 + padding[0] + c2.x, y0 + padding[1] + y,
+                        x0 + padding[0] + rx[c2.row] + x, y0 + padding[1] + y,
                         prop.alignContentsV,
                         iw,
                         h[c2.row] - c2.bs[1] - c2.bs[3],
                         h[c2.row] - c2.bs[1] - c2.bs[3] - extraH
                     );
+
+                    x += c2.w + prop.xSpacing;
                 }
 
                 if(lineBreakAfter){
                     y += (c2.isn ? (c2.p?.lineSpacing ?? prop.lineSpacing) : prop.lineSpacing);
                     y += h[c2.row];
+                    x = 0;
                 }
 
                 return pro;
