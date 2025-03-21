@@ -13,7 +13,7 @@ const propertiesDefaults: PropertiesDefaults = {
         "vagnr": { "borderWidth": 3, "padding": [14, 2] },
         "text": {},
         "newline": {},
-        "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 5, "type": "default" }
+        "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 4, "type": "default" }
     }
 };
 
@@ -524,25 +524,27 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             const fontSize = prop.fontSize;
             const fontStr = `${fontSize}px ${prop.font}`;
 
+            let txt = prop.value ?? "";
+
             if(vectorFont !== undefined){
-                contentsWidth = Math.floor(vectorFont.measureText(prop.value ?? "", fontSize).width);
+                contentsWidth = Math.floor(vectorFont.measureText(txt, fontSize).width);
             }else{
                 let ctx_temp = this.createCanvas();
                 ctx_temp.font = fontStr;
-                contentsWidth = Math.floor(ctx_temp.measureText(prop.value ?? "").width);
+                contentsWidth = Math.floor(ctx_temp.measureText(txt).width);
             }
 
             contentsHeight = prop.lineHeight;
 
             renderPromise = (ctx, x0, y0, _0, _1) => new Promise(res => {
                 if(vectorFont !== undefined){
-                    vectorFont.fillText(ctx, x0 + padding[0], y0 + firstLastCenter[1], prop.value ?? "", prop.color, fontSize);
+                    vectorFont.fillText(ctx, x0 + padding[0], y0 + firstLastCenter[1], txt, prop.color, fontSize);
                 }else{
                     ctx.font = fontStr;
                     ctx.textBaseline = "middle";
 
                     ctx.fillStyle = prop.color;
-                    ctx.fillText(prop.value ?? "", x0 + padding[0], y0 + firstLastCenter[1]);
+                    ctx.fillText(txt, x0 + padding[0], y0 + firstLastCenter[1]);
                 }
 
                 res();
@@ -555,7 +557,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let maxSymH = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
             maxContentsHeight = maxSymH * (prop.scale ?? 1);
 
-            let url = "res/symbol/" + (prop.type ?? "default") + ".json";
+            let url = `res/symbol/${prop.type ?? "default"}.json`;
             let v: string | undefined = prop.variant ?? symbolType.default;
 
             renderPromise = (ctx, x0, y0, maxInnerWidth, maxInnerHeight) => this.drawVec(
@@ -676,7 +678,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 ]; // [x0, y0, w, h]
 
                 return this.drawVec(
-                    ctx, "res/" + opt.type.slice(1) + ".json", prop.color, keys,
+                    ctx, `res/${opt.type.slice(1)}.json`, prop.color, keys,
                     x0 + prop.padding[0] - boundingBox[0] + crop[0], // dx
                     y0 + prop.padding[1] - boundingBox[2] + crop[1], // dy
                     crop[2], crop[3], // dw=sw, dh=sh
