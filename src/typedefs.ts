@@ -88,7 +88,6 @@ export type SignElementUserProperties = Partial<SignElementBaseProperties & Sign
 export type SignElementDimProperties = {
     borderRadius: Vec4;
     borderWidth: Vec5;
-    padding: Vec4;
 };
 
 // formatet som this.properties följer

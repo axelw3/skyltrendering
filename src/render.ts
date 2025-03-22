@@ -348,7 +348,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         );
 
         let prop: SignElementProperties = Object.assign(propBase, {
-            padding: to4EForm(propBase.padding, dimProperties.padding),
+            padding: to4EForm(propBase.padding, to4EForm(typeDefaults.padding !== undefined ? typeDefaults.padding : this.conf.globalDefaults.padding)),
             borderRadius: to4EForm(propBase.borderRadius, dimProperties.borderRadius),
             borderWidth: to5EForm(propBase.borderWidth, dimProperties.borderWidth)
         });
@@ -385,7 +385,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     opt.type === "group"
                         ? dimProperties
                         : {
-                            padding: to4EForm(opt.properties?.padding ?? null, dimProperties.padding),
                             borderRadius: to4EForm(opt.properties?.borderRadius ?? null, dimProperties.borderRadius),
                             borderWidth: to5EForm(opt.properties?.borderWidth ?? null, dimProperties.borderWidth)
                         }
@@ -784,7 +783,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
     public async render(data: SignElementOptions, dim?: Vec2): Promise<C>{
         let r = this._render(data, this.conf.rootDefaults, {
-            padding: to4EForm(this.conf.rootDefaults.padding ?? this.conf.globalDefaults.padding),
             borderRadius: to4EForm(this.conf.rootDefaults.borderRadius),
             borderWidth: to5EForm(this.conf.rootDefaults.borderWidth ?? this.conf.globalDefaults.borderWidth)
         }, dim);
