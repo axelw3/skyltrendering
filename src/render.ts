@@ -450,16 +450,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 contentsHeight = h[0] = contentBoxHeight;
             }
 
-            ch = ch.map(c2 => {
-                if(!c2.isn && !prop.blockDisplay && c2.p?.cover){
-                    let dw = Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
-                    c2.w += dw;
-                    w[c2.row] += dw;
-                }
-
-                return c2;
-            });
-
             contentsWidth = Math.max(...w);
 
             let rx = new Array(j + 1).fill(0).map((_, r) => SignRenderer.calculateAlignmentOffset(prop.alignContents, w[r], contentsWidth));
@@ -494,8 +484,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 if(!c2.isn){
                     let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
-
-                    if(c2.p?.cover) iw += Math.floor(c2.r.minInnerWidth * extraH / c2.r.minInnerHeight);
 
                     pro = c2.r.doRender(
                         ctx,
@@ -537,13 +525,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             renderPromise = (ctx, x0, y0, _0, _1) => new Promise(res => {
                 if(vectorFont !== undefined){
-                    vectorFont.fillText(ctx, x0 + padding[0], y0 + firstLastCenter[1], txt, prop.color, fontSize);
+                    vectorFont.fillText(ctx, x0 + padding[0], y0 + padding[1] + Math.floor(prop.lineHeight / 2), txt, prop.color, fontSize);
                 }else{
                     ctx.font = fontStr;
                     ctx.textBaseline = "middle";
 
                     ctx.fillStyle = prop.color;
-                    ctx.fillText(txt, x0 + padding[0], y0 + firstLastCenter[1]);
+                    ctx.fillText(txt, x0 + padding[0], y0 + padding[1] + Math.floor(prop.lineHeight / 2));
                 }
 
                 res();
