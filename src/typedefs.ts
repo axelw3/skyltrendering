@@ -166,8 +166,6 @@ type JSONVecElement = {path: string, fill: string};
 export type JSONVecReference = {use: number, translate?: [number, number]};
 
 export type JSONVec = {
-    width: number;
-    height: number;
     vectorSize: [number, number];
     defs: JSONVecElement[];
     core?: JSONVecReference[];

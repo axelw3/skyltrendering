@@ -239,13 +239,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         });
     }
 
-    private drawVec(ctx: T, href: string, currentColor: string, components: string[], dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void>{
+    private drawVec(ctx: T, href: string, currentColor: string, components: string[], fw: number, fh: number, dx: number, dy: number, dw: number, dh: number, sx: number = 0, sy: number = 0, sw: number = dw, sh: number = dh): Promise<void>{
         return this.getText(href).then(rawJson => {
             let vecImgData = JSON.parse(rawJson) as JSONVec;
             let ctx2: T = this.createCanvas(dw, dh);
 
-            let xf = (dw/sw) * vecImgData.width / vecImgData.vectorSize[0],
-                yf = (dh/sh) * vecImgData.height / vecImgData.vectorSize[1];
+            let xf = (dw/sw) * fw / vecImgData.vectorSize[0],
+                yf = (dh/sh) * fh / vecImgData.vectorSize[1];
 
             let tm: Vec6 = [
                 xf, 0, 0,
@@ -549,6 +549,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             renderPromise = (ctx, x0, y0, maxInnerWidth, maxInnerHeight) => this.drawVec(
                 ctx, url, prop.color, v === undefined ? [] : [v],
+                symbolType.width, symbolType.height[1],
                 x0 + padding[0], y0 + padding[1], // dx, dy
                 maxInnerWidth - padding[0] - padding[2], // dw
                 maxInnerHeight - padding[1] - padding[3], // dh
@@ -666,6 +667,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 return this.drawVec(
                     ctx, `res/${opt.type.slice(1)}.json`, prop.color, keys,
+                    t.width, t.height,
                     x0 + prop.padding[0] - boundingBox[0] + crop[0], // dx
                     y0 + prop.padding[1] - boundingBox[2] + crop[1], // dy
                     crop[2], crop[3], // dw=sw, dh=sh
