@@ -13,7 +13,7 @@ const propertiesDefaults: PropertiesDefaults = {
         "vagnr": { "borderWidth": 3, "padding": [14, 2] },
         "text": {},
         "newline": {},
-        "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 4, "type": "default" }
+        "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 3, "type": "default" }
     }
 };
 
