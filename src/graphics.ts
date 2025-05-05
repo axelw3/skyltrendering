@@ -32,9 +32,7 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
             p2.lineTo(cx, cy + signY * rry + signY * br);
             p2.closePath();
 
-            if(background === null){
-                ctx.clear(p2);
-            }else{
+            if(background !== null){
                 ctx.fillStyle = background;
                 ctx.fill(p2);
             }

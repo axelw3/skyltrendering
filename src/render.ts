@@ -748,7 +748,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     prop.color,
-                    prop.fillCorners ? prop.background : (inhProperties.background ?? null),
+                    prop.fillCorners ? prop.background : null,
                     br
                 );
 
