@@ -1,6 +1,6 @@
 {
     "name": "skyltrendering",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "",
     "main": "dist/node/main.js",
     "browser": "dist/browser/index.esm.js",
@@ -14,11 +14,11 @@
     "author": "axelw3",
     "license": "AGPL-3.0-or-later",
     "devDependencies": {
-        "@types/node": "^22.13.5",
-        "typescript": "^5.7.3",
-        "esbuild": "^0.25.0"
+        "@types/node": "^22.15.3",
+        "esbuild": "^0.25.3",
+        "typescript": "^5.8.3"
     },
     "dependencies": {
-        "@napi-rs/canvas": "^0.1.68"
+        "@napi-rs/canvas": "^0.1.70"
     }
 }
