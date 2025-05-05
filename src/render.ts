@@ -1,16 +1,16 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2 } from "./typedefs.js"
+import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2, RenderingResultOpt } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
 
 const propertiesDefaults: PropertiesDefaults = {
-    "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0 },
-    "rootDefaults": { "background": "#06a", "color": "white", "cover": true, "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true, "xSpacing": 8 },
+    "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0, "xSpacing": 8 },
+    "rootDefaults": { "background": "#06a", "color": "white", "cover": true, "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true },
     "defaults": {
         ".": { "padding": 8 },
         "group": { "background": "transparent", "borderWidth": 0, "lineSpacing": 0, "padding": 0 }, // dessa värden ärvs aldrig vidare
         "skylt": { "alignContentsV": "middle", "padding": 6 },
-        "vagnr": { "borderWidth": 3, "padding": [14, 2] },
+        "vagnr": { "borderWidth": 3, "padding": [14, 2], "xSpacing": 0 },
         "text": {},
         "newline": {},
         "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 3, "type": "default" }
@@ -317,7 +317,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     }
 
     private static getInhProperties(prop: SignElementBaseProperties & SignElementUserProperties, overrides: SignElementUserProperties | null = null): SignElementBaseProperties{
-        const { background, borderRadius, color, font, fontSize, lineHeight, lineSpacing, xSpacing } = prop;
+        const { background, borderRadius, color, font, fontSize, lineHeight, lineSpacing } = prop;
         return {
             background: overrides?.background ?? background,
             borderRadius: overrides?.borderRadius ?? borderRadius,
@@ -325,8 +325,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             font: overrides?.font ?? font,
             fontSize: overrides?.fontSize ?? fontSize,
             lineHeight: overrides?.lineHeight ?? lineHeight,
-            lineSpacing: overrides?.lineSpacing ?? lineSpacing,
-            xSpacing: overrides?.xSpacing ?? xSpacing
+            lineSpacing: overrides?.lineSpacing ?? lineSpacing
         };
     }
 
@@ -378,8 +377,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let colIds: number[] = (prop.columns ?? []);
             let cols: {x: number, w: number, els: number[]}[] = colIds.map(() => ({x: 0, w: 0, els: []}));
 
-            let k = 0;
-            let ch = (opt.elements ?? []).map((c, i, els) => {
+            let k = 0, preXSpacing = 0;
+            let ch: RenderingResultOpt<C, T>[] = (opt.elements ?? []).map((c, i, els) => {
                 let re = this._render(
                     c, inh,
                     opt.type === "group"
@@ -389,23 +388,23 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                             borderWidth: to5EForm(opt.properties?.borderWidth ?? null, dimProperties.borderWidth)
                         }
                 );
-                let c2 = {
+                let c2: RenderingResultOpt<C, T> = {
                     isn: c.type === "newline",
                     r: re,
-                    bs: re.bs,
                     row: j,
-                    w: 0,
-                    p: c.properties
+                    w: 0
                 };
 
-                let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
+                let lineBreakAfter = c2.isn || prop.blockDisplay;
 
                 if(!c2.isn){
-                    let ew = c2.r.minInnerWidth + c2.bs[0] + c2.bs[2];
+                    let ew = re.minInnerWidth + re.bs[0] + re.bs[2];
 
                     if(k > 0){
-                        w[j] += prop.xSpacing;
+                        w[j] += Math.max(preXSpacing, re.properties.xSpacing);
                     }
+
+                    preXSpacing = re.properties.xSpacing;
 
                     if(colIds.includes(k)){
                         let l = colIds.indexOf(k);
@@ -417,11 +416,11 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     w[j] += ew;
                     c2.w += ew;
 
-                    let h0 = c2.r.minInnerHeight + c2.bs[1] + c2.bs[3];
+                    let h0 = re.minInnerHeight + re.bs[1] + re.bs[3];
                     if(h0 > h[j]) h[j] = h0;
                 }
 
-                if(lineBreakAfter){
+                if(lineBreakAfter && i + 1 < els.length){
                     j++;
                     w.push(0);
                     h.push(0);
@@ -457,17 +456,17 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             // mitt-x (element), se även if-sats nedan
             // mitt-y (rad), se även if-sats nedan
             firstLastCenter = [
-                padding[0] + rx[0] + ch[0].bs[0],
+                padding[0] + rx[0] + ch[0].r.bs[0],
                 padding[1],
-                padding[0] + rx[j] + w[j] - ch[ch.length - 1].w + ch[ch.length - 1].bs[0],
+                padding[0] + rx[j] + w[j] - ch[ch.length - 1].w + ch[ch.length - 1].r.bs[0],
                 (contentBoxHeight ?? contentsHeight) + padding[1]
             ];
 
             if(prop.passAnchor){
                 firstLastCenter[0] += ch[0].r.flc[0];
-                firstLastCenter[1] += ch[0].bs[1] + ch[0].r.flc[1];
+                firstLastCenter[1] += ch[0].r.bs[1] + ch[0].r.flc[1];
                 firstLastCenter[2] += ch[ch.length - 1].r.flc[2];
-                firstLastCenter[3] += ch[ch.length - 1].bs[1] - h[h.length - 1] + ch[ch.length - 1].r.flc[3];
+                firstLastCenter[3] += ch[ch.length - 1].r.bs[1] - h[h.length - 1] + ch[ch.length - 1].r.flc[3];
             }else{
                 firstLastCenter[0] += Math.floor(ch[0].r.minInnerWidth / 2);
                 firstLastCenter[1] += Math.floor(h[0] / 2);
@@ -478,29 +477,29 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let x = 0, y = 0;
 
             renderPromise = (ctx, x0, y0, _0, _1) => Promise.all(ch.map((c2, i, els) => {
-                let lineBreakAfter = (c2.isn || prop.blockDisplay) && i + 1 < els.length;
+                let lineBreakAfter = c2.isn || prop.blockDisplay;
 
                 let pro: Promise<void> | undefined;
 
                 if(!c2.isn){
-                    let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.bs[0] - c2.bs[2]) : c2.r.minInnerWidth;
+                    let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.r.bs[0] - c2.r.bs[2]) : c2.r.minInnerWidth;
 
                     pro = c2.r.doRender(
                         ctx,
                         x0 + padding[0] + rx[c2.row] + x, y0 + padding[1] + y,
                         prop.alignContentsV,
                         iw,
-                        h[c2.row] - c2.bs[1] - c2.bs[3],
-                        h[c2.row] - c2.bs[1] - c2.bs[3] - extraH
+                        h[c2.row] - c2.r.bs[1] - c2.r.bs[3],
+                        h[c2.row] - c2.r.bs[1] - c2.r.bs[3] - extraH
                     );
-
-                    x += c2.w + prop.xSpacing;
                 }
 
                 if(lineBreakAfter){
-                    y += (c2.isn ? (c2.p?.lineSpacing ?? prop.lineSpacing) : prop.lineSpacing);
+                    y += (c2.isn ? c2.r.properties.lineSpacing : prop.lineSpacing);
                     y += h[c2.row];
                     x = 0;
+                }else if(i + 1 < els.length){
+                    x += c2.w + Math.max(c2.r.properties.xSpacing, els[i+1].r.properties.xSpacing);
                 }
 
                 return pro;
@@ -697,6 +696,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             minInnerWidth: iw0,
             minInnerHeight: ih0,
             bs: bs.h,
+            properties: prop,
             doRender: async (ctx: T, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0, rowInnerElHeight: number = ih0) => {
                 let innerHeight = prop.grow ? Math.min(rowInnerElHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
 

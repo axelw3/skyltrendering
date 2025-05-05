@@ -53,7 +53,6 @@ export type SignElementBaseProperties = {
     fontSize: number;
     lineHeight: number;
     lineSpacing: number;
-    xSpacing: number;
 };
 
 // properties (utöver de i SignElementBaseProperties) som alltid måste finnas
@@ -62,6 +61,7 @@ export type SignElementRequiredProperties = {
     borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
     borderWidth: (number | null)[] | number | null;
     padding: (number | null)[] | number | null;
+    xSpacing: number;
 };
 
 // properties som inte alltid finns i this.properties (dvs. aldrig obligatoriska)
@@ -152,7 +152,15 @@ export type RenderingResult<C, T extends NewDrawingArea<C>> = {
     minInnerWidth: number;
     minInnerHeight: number;
     bs: Vec4;
+    properties: SignElementProperties;
     doRender: (ctx: T, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number, rowInnerElHeight?: number) => Promise<void>;
+};
+
+export type RenderingResultOpt<C, T extends NewDrawingArea<C>> = {
+    isn: boolean;
+    r: RenderingResult<C, T>;
+    row: number;
+    w: number;
 };
 
 export interface Path2D{
