@@ -161,6 +161,7 @@ export type RenderingResultOpt<C, T extends NewDrawingArea<C>> = {
     r: RenderingResult<C, T>;
     row: number;
     w: number;
+    ls: number;
 };
 
 export interface Path2D{

@@ -388,16 +388,19 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                             borderWidth: to5EForm(opt.properties?.borderWidth ?? null, dimProperties.borderWidth)
                         }
                 );
+
+                let isNewline = c.type === "newline";
                 let c2: RenderingResultOpt<C, T> = {
-                    isn: c.type === "newline",
+                    isn: isNewline,
                     r: re,
                     row: j,
-                    w: 0
+                    w: 0,
+                    ls: isNewline ? (c.properties?.lineSpacing ?? prop.lineSpacing) : prop.lineSpacing
                 };
 
-                let lineBreakAfter = c2.isn || prop.blockDisplay;
+                let lineBreakAfter = isNewline || prop.blockDisplay;
 
-                if(!c2.isn){
+                if(!isNewline){
                     let ew = re.minInnerWidth + re.bs[0] + re.bs[2];
 
                     if(k > 0){
@@ -424,7 +427,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     j++;
                     w.push(0);
                     h.push(0);
-                    totalLineSpacing += c2.isn ? c2.r.properties.lineSpacing : prop.lineSpacing;
+                    totalLineSpacing += c2.ls;
                     k = 0;
                     return c2;
                 }
@@ -495,7 +498,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 }
 
                 if(lineBreakAfter){
-                    y += (c2.isn ? c2.r.properties.lineSpacing : prop.lineSpacing);
+                    y += c2.ls;
                     y += h[c2.row];
                     x = 0;
                 }else if(i + 1 < els.length){
