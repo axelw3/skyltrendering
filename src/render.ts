@@ -424,7 +424,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     j++;
                     w.push(0);
                     h.push(0);
-                    totalLineSpacing += prop.lineSpacing;
+                    totalLineSpacing += c2.isn ? c2.r.properties.lineSpacing : prop.lineSpacing;
                     k = 0;
                     return c2;
                 }
