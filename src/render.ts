@@ -1,4 +1,4 @@
-import type { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2, RenderingResultOpt } from "./typedefs.js"
+import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2, RenderingResultOpt, BASETYPE } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
@@ -7,7 +7,7 @@ const propertiesDefaults: PropertiesDefaults = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0, "xSpacing": 8 },
     "rootDefaults": { "background": "#06a", "color": "white", "cover": true, "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true },
     "defaults": {
-        ".": { "padding": 8 },
+        ".mall": { "padding": 8 },
         "group": { "background": "transparent", "borderWidth": 0, "lineSpacing": 0, "padding": 0 }, // dessa värden ärvs aldrig vidare
         "skylt": { "alignContentsV": "middle", "padding": 6 },
         "vagnr": { "borderWidth": 3, "padding": [14, 2], "xSpacing": 0 },
@@ -334,7 +334,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         opt = this.resolveTemplate(opt);
 
-        let typeDefaults: SignElementUserProperties | null = this.conf.defaults[opt.type.startsWith(".") ? "." : opt.type] ?? null;
+        const baseType = opt.type.startsWith(".") ? BASETYPE.MALL : opt.type as BASETYPE;
+        let typeDefaults: SignElementUserProperties | null = this.conf.defaults[baseType] ?? null;
 
         let propBase: SignElementBaseProperties & SignElementRequiredProperties = Object.assign(
             Object.assign(
@@ -347,12 +348,12 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         );
 
         let prop: SignElementProperties = Object.assign(propBase, {
-            padding: to4EForm(propBase.padding, to4EForm(typeDefaults.padding !== undefined ? typeDefaults.padding : this.conf.globalDefaults.padding)),
+            padding: to4EForm(propBase.padding, to4EForm(typeDefaults?.padding !== undefined ? typeDefaults.padding : this.conf.globalDefaults.padding)),
             borderRadius: to4EForm(propBase.borderRadius, dimProperties.borderRadius),
             borderWidth: to5EForm(propBase.borderWidth, dimProperties.borderWidth)
         });
 
-        let inh: SignElementBaseProperties & SignElementUserProperties = opt.type === "group"
+        let inh: SignElementBaseProperties & SignElementUserProperties = opt.type === BASETYPE.GROUP
             ? Object.assign({}, inhProperties, SignRenderer.getInhProperties(inhProperties, opt.properties))
             : SignRenderer.getInhProperties(prop);
 
@@ -369,7 +370,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let renderPromise: (ctx: T, x0: number, y0: number, maxInnerWidth: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
-        if(opt.type === "skylt" || opt.type === "group"){
+        if(opt.type === BASETYPE.SKYLT || opt.type === BASETYPE.GROUP){
             let w = [0], h = [0], j = 0;
 
             let totalLineSpacing = 0;
@@ -381,7 +382,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let ch: RenderingResultOpt<C, T>[] = (opt.elements ?? []).map((c, i, els) => {
                 let re = this._render(
                     c, inh,
-                    opt.type === "group"
+                    opt.type === BASETYPE.GROUP
                         ? dimProperties
                         : {
                             borderRadius: to4EForm(opt.properties?.borderRadius ?? null, dimProperties.borderRadius),
@@ -389,7 +390,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         }
                 );
 
-                let isNewline = c.type === "newline";
+                let isNewline = c.type === BASETYPE.NEWLINE;
                 let c2: RenderingResultOpt<C, T> = {
                     isn: isNewline,
                     r: re,
@@ -507,7 +508,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 return pro;
             })).then(() => {});
-        }else if(opt.type === "vagnr" || opt.type === "text"){
+        }else if(opt.type === BASETYPE.VAGNR || opt.type === BASETYPE.TEXT){
             let vectorFont = this.vectorFonts.get(prop.font.slice(1, -1));
 
             const fontSize = prop.fontSize;
@@ -538,7 +539,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 res();
             });
-        }else if(opt.type === "symbol"){
+        }else if(opt.type === BASETYPE.SYMBOL){
             let symbolType = this.conf.symbols[prop.type ?? ""];
 
             contentsWidth = symbolType.width * (prop.scale ?? 1);
@@ -559,7 +560,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 symbolType.width, // sw
                 Math.min((maxInnerHeight - padding[1] - padding[3]) / (prop.scale ?? 1), maxSymH) // sh
             );
-        }else if(opt.type === "newline"){
+        }else if(opt.type === BASETYPE.NEWLINE){
             contentsWidth = 0;
             contentsHeight = 0;
         }else if(opt.type.startsWith(".") && opt.nodes !== undefined){

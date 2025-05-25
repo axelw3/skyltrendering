@@ -97,20 +97,32 @@ export interface SignElementProperties extends SignElementBaseProperties, SignEl
     padding: Vec4;
 };
 
-type SignElementAnchor = {
+export type SignElementAnchor = {
     x?: NodeAnchorX;
     y?: NodeAnchorY;
 };
 
-type SignElementNode = {
+export type SignElementNode = {
     anchor?: SignElementAnchor;
     data: SignElementOptions;
 };
 
+export const enum BASETYPE{
+    SKYLT = "skylt",
+    TEXT = "text",
+    VAGNR = "vagnr",
+    NEWLINE = "newline",
+    SYMBOL = "symbol",
+    GROUP = "group",
+    MALL = ".mall",
+    MAKRO = "#makro"
+};
+
+export type SignElementType = `${BASETYPE}` | `.${string}` | `#${string}`;
+
 // data som ges av användaren
 export type SignElementOptions = {
-    format?: number; // not currently used
-    type: "skylt" | "text" | "vagnr" | "newline" | "symbol" | `.${string}` | "group";
+    type: SignElementType;
     properties?: SignElementUserProperties;
     elements?: SignElementOptions[];
     nodes?: {[key: string]: SignElementNode};
@@ -120,7 +132,7 @@ export type SignElementOptions = {
 export type PropertiesDefaults = {
     globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
     rootDefaults: SignElementBaseProperties & SignElementUserProperties;
-    defaults: {[key: string]: SignElementUserProperties};
+    defaults: {[key in BASETYPE]?: SignElementUserProperties};
 };
 
 export type ConfigData = PropertiesDefaults & {
