@@ -289,7 +289,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let templateName = opt.type.slice(1);
             let templ = this.conf.templates[templateName];
             if(!templ){
-                throw new Error("ERROR: Unknown template \"" + templateName + "\".");
+                throw new Error("Unknown macro \"" + templateName + "\".");
                 break;
             }
 
@@ -371,6 +371,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             = () => Promise.resolve();
 
         if(opt.type === BASETYPE.SKYLT || opt.type === BASETYPE.GROUP){
+            if(opt.elements === undefined || opt.elements.length === 0){
+                throw new Error(`Element of type "${opt.type}" has no children.`);
+            }
+
             let w = [0], h = [0], j = 0;
 
             let totalLineSpacing = 0;
@@ -379,7 +383,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let cols: {x: number, w: number, els: number[]}[] = colIds.map(() => ({x: 0, w: 0, els: []}));
 
             let k = 0, preXSpacing = 0;
-            let ch: RenderingResultOpt<C, T>[] = (opt.elements ?? []).map((c, i, els) => {
+            let ch: RenderingResultOpt<C, T>[] = opt.elements.map((c, i, els) => {
                 let re = this._render(
                     c, inh,
                     opt.type === BASETYPE.GROUP
@@ -540,14 +544,18 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 res();
             });
         }else if(opt.type === BASETYPE.SYMBOL){
-            let symbolType = this.conf.symbols[prop.type ?? ""];
+            if(prop.type === undefined) throw new Error("Symbol element has no \"type\" property.");
+
+            let symbolType = this.conf.symbols[prop.type];
+
+            if(symbolType === undefined) throw new Error(`Symbol type "${prop.type}" was not defined.`);
 
             contentsWidth = symbolType.width * (prop.scale ?? 1);
             contentsHeight = symbolType.height[0] * (prop.scale ?? 1);
             let maxSymH = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
             maxContentsHeight = maxSymH * (prop.scale ?? 1);
 
-            let url = `res/symbol/${prop.type ?? "default"}.json`;
+            let url = `res/symbol/${prop.type}.json`;
             let v: string | undefined = prop.variant ?? symbolType.default;
 
             renderPromise = (ctx, x0, y0, maxInnerWidth, maxInnerHeight) => this.drawVec(
@@ -563,10 +571,14 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         }else if(opt.type === BASETYPE.NEWLINE){
             contentsWidth = 0;
             contentsHeight = 0;
-        }else if(opt.type.startsWith(".") && opt.nodes !== undefined){
-            let nodes = opt.nodes;
+        }else if(opt.type.startsWith(".")){
+            let nodes = opt.nodes ?? {};
             let t = this.conf.signTypes[opt.type.slice(1)];
             let keys = Object.keys(t.nodes).sort().filter(nodeName => !!nodes[nodeName]);
+
+            if(opt.nodes === undefined || keys.length === 0){
+                throw new Error(`No valid node elements provided for element of template type "${opt.type}".`);
+            }
 
             let svgBox = Array.from(t.core);
             keys.forEach(nodeName => {
@@ -784,7 +796,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let bs = r.bs;
         let canv = this.createCanvas(r.minInnerWidth + bs[0] + bs[2], r.minInnerHeight + bs[1] + bs[3]);
 
-        if(canv === null) throw new Error("Fel: Kunde inte hitta tvådimensionell renderingskontext.");
+        if(canv === null) throw new Error("Could not retrieve a rendering context.");
 
         await r.doRender(canv, 0, 0);
         return canv.canv;
