@@ -46,7 +46,7 @@ export class VectorFont{
 
             if(glyph.outline !== undefined){
                 ctx.fill(
-                    ctx.createPath2D(glyph.outline, [SCALE, 0, 0, -SCALE, x, y + SCALE * MIDDLE_Y])
+                    ctx.importPath2D(glyph.outline, [SCALE, 0, 0, -SCALE, x, y + SCALE * MIDDLE_Y])
                 );
             }
 

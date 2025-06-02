@@ -225,7 +225,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         ctx.lineWidth = bw;
 
         feature.paths.forEach(path => {
-            let p = ctx.createPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
+            let p = ctx.importPath2D(parseVarStr(path.p, bs.el[bri]?.env), tm);
 
             if(path.f !== undefined){
                 ctx.fillStyle = typeof path.f === "string" ? path.f : clr[Math.abs(path.f)-1];
@@ -272,7 +272,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 tm[4] -= sx * dw/sw;
                 tm[5] -= sy * dh/sh;
 
-                let path = ctx2.createPath2D(def.path, tm);
+                let path = ctx2.importPath2D(def.path, tm);
                 ctx2.fillStyle = def.fill === "currentColor" ? currentColor : def.fill;
                 ctx2.fill(path);
             });

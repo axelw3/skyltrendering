@@ -1,5 +1,5 @@
 import { SignRenderer as _SignRenderer } from "./render.js";
-import { Vec6, NewDrawingArea, Path2D as _Path2D } from "./typedefs.js";
+import { Vec6, NewDrawingArea, Path2D as _Path2D, TextBaseline } from "./typedefs.js";
 
 import { createCanvas, Canvas, Path2D, SKRSContext2D, GlobalFonts } from "@napi-rs/canvas";
 import { readFile } from "fs/promises"
@@ -13,7 +13,11 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
         this.ctx = this.canv.getContext("2d");
     }
 
-    createPath2D(s?: string, m?: Vec6 | undefined): Path2D {
+    createPath2D(): _Path2D {
+        return new Path2D();
+    }
+
+    importPath2D(s: string, m?: Vec6 | undefined): Path2D {
         let p = new Path2D();
         let [a, b, c, d, e, f] = m === undefined ? [1, 0, 0, 1, 0, 0] : [...m];
         p.addPath(new Path2D(s), {a, b, c, d, e, f});
@@ -40,8 +44,8 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
         this.ctx.font = x;
     }
 
-    set textBaseline(x: string) {
-        this.ctx.textBaseline = x as CanvasTextBaseline;
+    set textBaseline(x: TextBaseline) {
+        this.ctx.textBaseline = x;
     }
 
     fill(path: Path2D): void{
@@ -50,14 +54,6 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
 
     stroke(path: Path2D): void {
         this.ctx.stroke(path);
-    }
-
-    clear(path: Path2D): void{
-        let previousMode = this.ctx.globalCompositeOperation ?? "source-over";
-        this.ctx.globalCompositeOperation = "destination-out";
-        this.fillStyle = "#000";
-        this.fill(path);
-        this.ctx.globalCompositeOperation = previousMode;
     }
 
     fillRect(x: number, y: number, w: number, h: number): void {

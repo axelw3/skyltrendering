@@ -11,6 +11,8 @@ export type AlignModeY = "top" | "middle" | "bottom";
 type NodeAnchorX = AlignModeX | "center-first" | "center-last";
 type NodeAnchorY = AlignModeY | "middle-first" | "middle-last";
 
+export type TextBaseline = "top" | "middle" | "bottom" | "alphabetic" | "hanging" | "ideographic";
+
 /**
  * Designer sparas i "nedre kant"-form, dvs.
  * orienterade på motsvarande sätt som klammern
@@ -176,6 +178,8 @@ export type RenderingResultOpt<C, T extends NewDrawingArea<C>> = {
     ls: number;
 };
 
+export interface Path2DImmutable{};
+
 export interface Path2D{
     moveTo(x: number, y: number): void;
     lineTo(x: number, y: number): void;
@@ -196,7 +200,8 @@ export type JSONVec = {
 export interface NewDrawingArea<T>{
     canv: T;
 
-    createPath2D(s?: string, m?: Vec6): Path2D;
+    createPath2D(): Path2D;
+    importPath2D(s: string, m?: Vec6): Path2DImmutable;
 
     measureText(text: string): {width: number};
 
@@ -205,11 +210,10 @@ export interface NewDrawingArea<T>{
     set lineWidth(x: number);
 
     set font(x: string);
-    set textBaseline(x: string);
+    set textBaseline(x: TextBaseline);
 
-    fill(path: Path2D): void;
-    stroke(path: Path2D): void;
-    clear(path: Path2D): void;
+    fill(path: Path2D | Path2DImmutable): void;
+    stroke(path: Path2D | Path2DImmutable): void;
 
     fillRect(x: number, y: number, w: number, h: number): void;
     fillText(text: string, x: number, y: number): void;
