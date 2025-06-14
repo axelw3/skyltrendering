@@ -22,10 +22,6 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
         return p;
     }
 
-    measureText(text: string): { width: number; } {
-        return this.ctx.measureText(text);
-    }
-
     set fillStyle(x: string) {
         this.ctx.fillStyle = x;
     }
@@ -91,5 +87,11 @@ export class SignRenderer extends _SignRenderer<HTMLCanvasElement, BrowserDrawin
         document.fonts.add(font);
 
         await font.load();
+    }
+
+    protected override measureText(text: string, font: string): { width: number; } {
+        let ctx_temp = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
+        ctx_temp.font = font;
+        return ctx_temp.measureText(text);
     }
 };

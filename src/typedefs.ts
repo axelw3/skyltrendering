@@ -161,18 +161,18 @@ export type ConfigData = PropertiesDefaults & {
 
 export type UserConfigData = Partial<ConfigData>;
 
-export type RenderingResult<C, T extends NewDrawingArea<C>> = {
+export type RenderingResult<C> = {
     flc: Vec4;
     minInnerWidth: number;
     minInnerHeight: number;
     bs: Vec4;
     properties: SignElementProperties;
-    doRender: (ctx: T, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number, rowInnerElHeight?: number) => Promise<void>;
+    doRender: (ctx: NewDrawingArea<C>, x0: number, y0: number, verticalAlign?: AlignModeY, maxInnerWidth?: number, maxInnerHeight?: number, rowInnerElHeight?: number) => Promise<void>;
 };
 
-export type RenderingResultOpt<C, T extends NewDrawingArea<C>> = {
+export type RenderingResultOpt<C> = {
     isn: boolean;
-    r: RenderingResult<C, T>;
+    r: RenderingResult<C>;
     row: number;
     w: number;
     ls: number;
@@ -203,8 +203,6 @@ export interface NewDrawingArea<T>{
     createPath2D(): Path2D;
     importPath2D(s: string, m?: Vec6): Path2DImmutable;
 
-    measureText(text: string): {width: number};
-
     set fillStyle(x: string);
     set strokeStyle(x: string);
     set lineWidth(x: number);
@@ -220,3 +218,5 @@ export interface NewDrawingArea<T>{
 
     drawImage(image: NewDrawingArea<T>, dx: number, dy: number): void;
 };
+
+export type CanvasFactory<C> = (w?: number, h?: number) => NewDrawingArea<C>;

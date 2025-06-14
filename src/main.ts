@@ -24,10 +24,6 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
         return p;
     }
 
-    measureText(text: string): { width: number; } {
-        return this.ctx.measureText(text);
-    }
-
     set fillStyle(x: string) {
         this.ctx.fillStyle = x;
     }
@@ -81,5 +77,11 @@ export class SignRenderer extends _SignRenderer<Canvas, NodeDrawingArea>{
 
     public override async registerFont(familyName: string, src: string): Promise<void> {
         GlobalFonts.registerFromPath(src, familyName);
+    }
+
+    protected override measureText(text: string, font: string): { width: number; } {
+        let ctx_temp = createCanvas(0, 0).getContext("2d");
+        ctx_temp.font = font;
+        return ctx_temp.measureText(text);
     }
 };
