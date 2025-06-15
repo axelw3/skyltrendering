@@ -25,14 +25,14 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
 
         // Fyll hörn
         if(br > 0){
-            let p2 = ctx.createPath2D();
-            p2.ellipse(cx, cy, arx + w0/2, ary + w1/2, 0, v2, v1, signX === signY);
-            p2.lineTo(cx + signX * rrx + signX * br, cy);
-            p2.lineTo(cx + signX * rrx + signX * br, cy + signY * rry + signY * br);
-            p2.lineTo(cx, cy + signY * rry + signY * br);
-            p2.closePath();
-
             if(background !== null){
+                let p2 = ctx.createPath2D();
+                p2.ellipse(cx, cy, arx + w0/2, ary + w1/2, 0, v2, v1, signX === signY);
+                p2.lineTo(cx + signX * rrx + signX * br, cy);
+                p2.lineTo(cx + signX * rrx + signX * br, cy + signY * rry + signY * br);
+                p2.lineTo(cx, cy + signY * rry + signY * br);
+                p2.closePath();
+
                 ctx.fillStyle = background;
                 ctx.fill(p2);
             }
@@ -58,8 +58,12 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
     drawCorner(x0, y0 + innerHeight, -1, 1, 3);
 
     let drawLineDash = (innerLength: number, cb: (z: number, s: number) => void) => {
-        let actualLineDash = [lineDash[0], lineDash[1]];
+        if(lineDash[1] === 0){
+            cb(0, innerLength);
+            return;
+        }
 
+        let actualLineDash = [lineDash[0], lineDash[1]];
         let r = 0;
         while(true){
             r = (innerLength + actualLineDash[1]) % (actualLineDash[0] + actualLineDash[1]);

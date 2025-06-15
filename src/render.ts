@@ -2,6 +2,7 @@ import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBa
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
+import { SVGCanvas, SVGDrawingArea } from "./svg.js";
 
 const propertiesDefaults: PropertiesDefaults = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0, "xSpacing": 8 },
@@ -794,6 +795,16 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     public async render(data: SignElementOptions, dim?: Vec2): Promise<C>{
         let r = this._render<C>(data, this.conf.rootDefaults, this.createCanvas, undefined, dim);
         let canv = this.createCanvas(r.minInnerWidth + r.bs[0] + r.bs[2], r.minInnerHeight + r.bs[1] + r.bs[3]);
+
+        await r.doRender(canv, 0, 0);
+        return canv.canv;
+    }
+
+    public async renderToSVG(data: SignElementOptions, dim?: Vec2): Promise<SVGCanvas>{
+        let canvasFactory = (w?: number, h?: number) => new SVGDrawingArea(w ?? 300, h ?? 150);
+
+        let r = this._render<SVGCanvas>(data, this.conf.rootDefaults, canvasFactory, undefined, dim);
+        let canv = canvasFactory(r.minInnerWidth + r.bs[0] + r.bs[2], r.minInnerHeight + r.bs[1] + r.bs[3]);
 
         await r.doRender(canv, 0, 0);
         return canv.canv;
