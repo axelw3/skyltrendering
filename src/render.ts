@@ -1,4 +1,4 @@
-import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, Vec2, RenderingResultOpt, BASETYPE, CanvasFactory } from "./typedefs.js"
+import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, BASETYPE, CanvasFactory } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
@@ -110,26 +110,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let parsed = JSON.parse(data);
         let font = new VectorFont(parsed);
         this.vectorFonts.set(name, font);
-    }
-
-    private fitContents(outerWidth: number, outerHeight: number, properties: SignElementProperties): Vec2{
-        let bw = properties.borderWidth;
-
-        let innerWidth = outerWidth - bw[0] - bw[2],
-            innerHeight = outerHeight - bw[1] - bw[3];
-
-        while(true){
-            let bs = this.borderSize(innerWidth, innerHeight, properties);
-            let shX = (bs.h[0] + bs.h[2] + innerWidth) > outerWidth,
-                shY = (bs.h[1] + bs.h[3] + innerHeight) > outerHeight;
-
-            if(shX) innerWidth--;
-
-            if(shY) innerHeight--;
-            else if(!shX) break;
-        }
-
-        return [innerWidth, innerHeight];
     }
 
     private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
@@ -334,7 +314,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     private _render<C>(opt: SignElementOptions, inhProperties: SignElementBaseProperties & SignElementUserProperties, canvasFactory: CanvasFactory<C>, dimProperties: SignElementDimProperties = {
         borderRadius: to4EForm(this.conf.rootDefaults.borderRadius),
         borderWidth: to5EForm(this.conf.rootDefaults.borderWidth ?? this.conf.globalDefaults.borderWidth)
-    }, targetDim?: Vec2): RenderingResult<C>{
+    }): RenderingResult<C>{
         let firstLastCenter: Vec4 = [NaN, NaN, NaN, NaN]; // [cx_first, cy_firstrow, cx_last, cy_lastrow]
 
         opt = this.resolveTemplate(opt);
@@ -365,12 +345,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let padding = Array.from(prop.padding);
 
         let contentsWidth = 0, contentsHeight = 0, maxContentsHeight = -1;
-        let contentBoxWidth: number | null = null, contentBoxHeight: number | null = null;
-
-        if(targetDim !== undefined){
-            let [iw, ih] = this.fitContents(targetDim[0], targetDim[1], prop);
-            [contentBoxWidth, contentBoxHeight] = [iw - padding[0] - padding[2], ih - padding[1] - padding[3]];
-        }
 
         let renderPromise: (ctx: NewDrawingArea<C>, x0: number, y0: number, maxInnerWidth: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
@@ -457,12 +431,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             contentsHeight = h.reduce((a, b) => a + b, totalLineSpacing);
 
-            let extraH = 0;
-            if(contentBoxHeight !== null && j === 0){
-                extraH = contentBoxHeight - contentsHeight;
-                contentsHeight = h[0] = contentBoxHeight;
-            }
-
             contentsWidth = Math.max(...w);
 
             let rx = new Array(j + 1).fill(0).map((_, r) => SignRenderer.calculateAlignmentOffset(prop.alignContents, w[r], contentsWidth));
@@ -473,7 +441,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 padding[0] + rx[0] + ch[0].r.bs[0],
                 padding[1],
                 padding[0] + rx[j] + w[j] - ch[ch.length - 1].w + ch[ch.length - 1].r.bs[0],
-                (contentBoxHeight ?? contentsHeight) + padding[1]
+                contentsHeight + padding[1]
             ];
 
             if(prop.passAnchor){
@@ -496,7 +464,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let pro: Promise<void> | undefined;
 
                 if(!c2.isn){
-                    let iw = prop.blockDisplay ? ((contentBoxWidth ?? contentsWidth) - c2.r.bs[0] - c2.r.bs[2]) : c2.r.minInnerWidth;
+                    let iw = prop.blockDisplay ? (contentsWidth - c2.r.bs[0] - c2.r.bs[2]) : c2.r.minInnerWidth;
 
                     pro = c2.r.doRender(
                         ctx,
@@ -504,7 +472,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         prop.alignContentsV,
                         iw,
                         h[c2.row] - c2.r.bs[1] - c2.r.bs[3],
-                        h[c2.row] - c2.r.bs[1] - c2.r.bs[3] - extraH
+                        h[c2.row] - c2.r.bs[1] - c2.r.bs[3]
                     );
                 }
 
@@ -698,8 +666,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             throw new Error("Okänd typ av element: " + String(opt.type));
         }
 
-        const   iw0 = (contentBoxWidth ?? contentsWidth) + padding[0] + padding[2],
-                ih0 = (contentBoxHeight ?? contentsHeight) + padding[1] + padding[3];
+        const   iw0 = contentsWidth + padding[0] + padding[2],
+                ih0 = contentsHeight + padding[1] + padding[3];
 
         let bs = this.borderSize(iw0, ih0, prop);
 
@@ -710,7 +678,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             ];
         }
 
-        if(maxContentsHeight < 0) maxContentsHeight = (contentBoxHeight ?? contentsHeight);
+        if(maxContentsHeight < 0) maxContentsHeight = contentsHeight;
 
         return {
             flc: firstLastCenter,
@@ -792,18 +760,18 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         };
     }
 
-    public async render(data: SignElementOptions, dim?: Vec2): Promise<C>{
-        let r = this._render<C>(data, this.conf.rootDefaults, this.createCanvas, undefined, dim);
+    public async render(data: SignElementOptions): Promise<C>{
+        let r = this._render<C>(data, this.conf.rootDefaults, this.createCanvas);
         let canv = this.createCanvas(r.minInnerWidth + r.bs[0] + r.bs[2], r.minInnerHeight + r.bs[1] + r.bs[3]);
 
         await r.doRender(canv, 0, 0);
         return canv.canv;
     }
 
-    public async renderToSVG(data: SignElementOptions, dim?: Vec2): Promise<SVGCanvas>{
+    public async renderToSVG(data: SignElementOptions): Promise<SVGCanvas>{
         let canvasFactory = (w?: number, h?: number) => new SVGDrawingArea(w ?? 300, h ?? 150);
 
-        let r = this._render<SVGCanvas>(data, this.conf.rootDefaults, canvasFactory, undefined, dim);
+        let r = this._render<SVGCanvas>(data, this.conf.rootDefaults, canvasFactory);
         let canv = canvasFactory(r.minInnerWidth + r.bs[0] + r.bs[2], r.minInnerHeight + r.bs[1] + r.bs[3]);
 
         await r.doRender(canv, 0, 0);

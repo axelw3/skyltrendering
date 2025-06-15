@@ -6,8 +6,8 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
     canv: HTMLCanvasElement;
     private ctx: CanvasRenderingContext2D;
 
-    constructor(w?: number, h?: number){
-        this.canv = Object.assign(document.createElement("canvas"), {width: w || 300, height: h || 150});
+    constructor(w: number, h: number){
+        this.canv = Object.assign(document.createElement("canvas"), {width: w, height: h});
         this.ctx = this.canv.getContext("2d") as CanvasRenderingContext2D;
     }
 
@@ -65,7 +65,7 @@ class BrowserDrawingArea implements NewDrawingArea<HTMLCanvasElement>{
 
 export class SignRenderer extends _SignRenderer<HTMLCanvasElement, BrowserDrawingArea>{
     protected override createCanvas(w?: number, h?: number): BrowserDrawingArea {
-        return new BrowserDrawingArea(w, h);
+        return new BrowserDrawingArea(w ?? 300, h ?? 150);
     }
 
     protected override getText(url: string): Promise<string> {

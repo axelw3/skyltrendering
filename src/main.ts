@@ -68,7 +68,7 @@ class NodeDrawingArea implements NewDrawingArea<Canvas>{
 
 export class SignRenderer extends _SignRenderer<Canvas, NodeDrawingArea>{
     protected override createCanvas(w?: number, h?: number): NodeDrawingArea {
-        return new NodeDrawingArea(w || 300, h || 150);
+        return new NodeDrawingArea(w ?? 300, h ?? 150);
     }
 
     protected override getText(url: string): Promise<string> {
