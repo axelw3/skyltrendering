@@ -5,64 +5,53 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
 
     if(Math.max(...nominalLineWidth) <= 0) return;
 
-    let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number) => {
+    if(background !== null){
+        ctx.fillStyle = background;
+        if(borderRadius[0] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 - nominalLineWidth[1], borderRadius[0], borderRadius[0]);
+        if(borderRadius[1] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[1], y0 - nominalLineWidth[1], borderRadius[1], borderRadius[1]);
+        if(borderRadius[2] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[2], y0 + innerHeight + nominalLineWidth[3] - borderRadius[2], borderRadius[2], borderRadius[2]);
+        if(borderRadius[3] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 + innerHeight + nominalLineWidth[3] - borderRadius[3], borderRadius[3], borderRadius[3]);
+    }
+
+    let p = ctx.createPath2D();
+
+    let drawCorner = (cx: number, cy: number, signX: number, signY: number, i: number, outer: boolean) => {
         let w0 = nominalLineWidth[(Math.ceil(i / 2) * 2) % 4],
             w1 = nominalLineWidth[Math.floor(i / 2) * 2 + 1],
             br = borderRadius[i];
 
         let arx = Math.max(br - w0, 0),
-            ary = Math.max(br - w1, 0),
-            rrx = Math.max(0, w0 - br),
-            rry = Math.max(0, w1 - br);
+            ary = Math.max(br - w1, 0);
 
         cx -= signX * arx;
         cy -= signY * ary;
 
         let startAngle = ((i - 2) * Math.PI) / 2 + Math.PI/4;
 
-        let v1 = startAngle - signX*signY*Math.PI/4,
-            v2 = startAngle + signX*signY*Math.PI/4;
+        let v1 = startAngle - Math.PI/4,
+            v2 = startAngle + Math.PI/4;
 
-        // Fyll hörn
-        if(br > 0){
-            if(background !== null){
-                let p2 = ctx.createPath2D();
-                p2.ellipse(cx, cy, arx + w0/2, ary + w1/2, 0, v2, v1, signX === signY);
-                p2.lineTo(cx + signX * rrx + signX * br, cy);
-                p2.lineTo(cx + signX * rrx + signX * br, cy + signY * rry + signY * br);
-                p2.lineTo(cx, cy + signY * rry + signY * br);
-                p2.closePath();
-
-                ctx.fillStyle = background;
-                ctx.fill(p2);
-            }
+        if(outer){
+            p.ellipse(cx + signX * Math.max(0, w0 - br), cy + signY * Math.max(0, w1 - br), br, br, 0, v1, v2, false);
+        }else{
+            p.ellipse(cx, cy, arx, ary, 0, v2, v1, true);
         }
-
-        let p = ctx.createPath2D();
-        //ctx.moveTo(cx + signX * arx, cy);
-        p.moveTo(cx + signX * (arx + w0), cy);
-        p.lineTo(cx + signX * (arx + w0), cy + signY * rry);
-        p.ellipse(cx + signX * rrx, cy + signY * rry, br, br, 0, v1, v2, signX !== signY);
-        p.lineTo(cx, cy + signY * (ary + w1));
-        p.lineTo(cx, cy + signY * ary);
-        p.ellipse(cx, cy, arx, ary, 0, v2, v1, signX === signY);
-        //ctx.closePath();
-
-        ctx.fillStyle = color;
-        ctx.fill(p);
     };
 
-    drawCorner(x0, y0, -1, -1, 0);
-    drawCorner(x0 + innerWidth, y0, 1, -1, 1);
-    drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2);
-    drawCorner(x0, y0 + innerHeight, -1, 1, 3);
+    drawCorner(x0, y0, -1, -1, 0, true);
+    drawCorner(x0 + innerWidth, y0, 1, -1, 1, true);
+    drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2, true);
+    drawCorner(x0, y0 + innerHeight, -1, 1, 3, true);
+
+    p.lineTo(x0 - nominalLineWidth[0], y0 + borderRadius[0] - nominalLineWidth[1]);
+    p.lineTo(x0, y0 + Math.max(borderRadius[0] - nominalLineWidth[1], 0));
+
+    drawCorner(x0, y0 + innerHeight, -1, 1, 3, false);
+    drawCorner(x0 + innerWidth, y0 + innerHeight, 1, 1, 2, false);
+    drawCorner(x0 + innerWidth, y0, 1, -1, 1, false);
+    drawCorner(x0, y0, -1, -1, 0, false);
 
     let drawLineDash = (innerLength: number, cb: (z: number, s: number) => void) => {
-        if(lineDash[1] === 0){
-            cb(0, innerLength);
-            return;
-        }
-
         let actualLineDash = [lineDash[0], lineDash[1]];
         let r = 0;
         while(true){
@@ -72,38 +61,54 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
         }
 
         let z = Math.floor(r / 2);
-        do{
-            cb(z, actualLineDash[0]);
-            z += actualLineDash[0] + actualLineDash[1];
-        }while(z + actualLineDash[0] <= innerLength);
-
+        cb(0, z);
+        while(z + actualLineDash[0] < innerLength){
+            // en linje ryms
+            z += actualLineDash[0];
+            let lss = Math.min(innerLength - z, actualLineDash[1]);
+            cb(z, lss); // mellanrum därefter
+            z += lss;
+        }
+        cb(z, innerLength - z);
     };
 
+    let pathRect = (x: number, y: number, w: number, h: number) => {
+        p.moveTo(x, y);
+        p.lineTo(x, y + h);
+        p.lineTo(x + w, y + h);
+        p.lineTo(x + w, y);
+        p.lineTo(x, y);
+    };
+
+    if(lineDash[1] > 0){
+        // Ovanför
+        drawLineDash(
+            innerWidth - Math.max(0, borderRadius[0] - nominalLineWidth[0]) - Math.max(0, borderRadius[1] - nominalLineWidth[2]),
+            (x, w) => pathRect(x0 + Math.max(0, borderRadius[0] - nominalLineWidth[0]) + x, y0 - nominalLineWidth[1], w, nominalLineWidth[1])
+        );
+
+        // Nedanför
+        drawLineDash(
+            innerWidth - Math.max(0, borderRadius[3] - nominalLineWidth[0]) - Math.max(0, borderRadius[2] - nominalLineWidth[2]),
+            (x, w) => pathRect(x0 + Math.max(0, borderRadius[3] - nominalLineWidth[0]) + x, y0 + innerHeight, w, nominalLineWidth[3])
+        );
+
+        // Vänster
+        drawLineDash(
+            innerHeight - Math.max(0, borderRadius[0] - nominalLineWidth[1]) - Math.max(0, borderRadius[3] - nominalLineWidth[3]),
+            (y, h) => pathRect(x0 - nominalLineWidth[0], y0 + Math.max(0, borderRadius[0] - nominalLineWidth[1]) + y, nominalLineWidth[0], h)
+        );
+
+        // Höger
+        drawLineDash(
+            innerHeight - Math.max(0, borderRadius[1] - nominalLineWidth[1]) - Math.max(0, borderRadius[2] - nominalLineWidth[3]),
+            (y, h) => pathRect(x0 + innerWidth, y0 + Math.max(0, borderRadius[1] - nominalLineWidth[1]) + y, nominalLineWidth[2], h)
+        );
+    }
+
+    //p.closePath();
     ctx.fillStyle = color;
-
-    // Ovanför
-    drawLineDash(
-        innerWidth - Math.max(0, borderRadius[0] - nominalLineWidth[0]) - Math.max(0, borderRadius[1] - nominalLineWidth[2]),
-        (x, w) => ctx.fillRect(x0 + Math.max(0, borderRadius[0] - nominalLineWidth[0]) + x, y0 - nominalLineWidth[1], w, nominalLineWidth[1])
-    );
-
-    // Nedanför
-    drawLineDash(
-        innerWidth - Math.max(0, borderRadius[3] - nominalLineWidth[0]) - Math.max(0, borderRadius[2] - nominalLineWidth[2]),
-        (x, w) => ctx.fillRect(x0 + Math.max(0, borderRadius[3] - nominalLineWidth[0]) + x, y0 + innerHeight, w, nominalLineWidth[3])
-    );
-
-    // Vänster
-    drawLineDash(
-        innerHeight - Math.max(0, borderRadius[0] - nominalLineWidth[1]) - Math.max(0, borderRadius[3] - nominalLineWidth[3]),
-        (y, h) => ctx.fillRect(x0 - nominalLineWidth[0], y0 + Math.max(0, borderRadius[0] - nominalLineWidth[1]) + y, nominalLineWidth[0], h)
-    );
-
-    // Höger
-    drawLineDash(
-        innerHeight - Math.max(0, borderRadius[1] - nominalLineWidth[1]) - Math.max(0, borderRadius[2] - nominalLineWidth[3]),
-        (y, h) => ctx.fillRect(x0 + innerWidth, y0 + Math.max(0, borderRadius[1] - nominalLineWidth[1]) + y, nominalLineWidth[2], h)
-    );
+    ctx.fill(p);
 }
 
 
