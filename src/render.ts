@@ -99,11 +99,17 @@ class BorderDimensions{
 }
 
 export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
+    private registeredFonts: Map<string, string>;
+
     protected abstract createCanvas(w?: number, h?: number): T;
     protected abstract getText(url: string): Promise<string>;
 
     protected abstract measureText(text: string, font: string): {width: number};
-    public abstract registerFont(familyName: string, src: string): Promise<void>;
+    protected abstract _registerFont(familyName: string, src: string): Promise<void>;
+    public async registerFont(familyName: string, src: string): Promise<void>{
+        await this._registerFont(familyName, src);
+        this.registeredFonts.set(familyName, src);
+    }
 
     public async registerVectorFont(name: string, src: string): Promise<void>{
         let data = await this.getText(src);
@@ -296,6 +302,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         };
 
         this.vectorFonts = new Map<string, VectorFont>();
+        this.registeredFonts = new Map<string, string>();
     }
 
     private static getInhProperties(prop: SignElementBaseProperties & SignElementUserProperties, overrides: SignElementUserProperties | null = null): SignElementBaseProperties{
@@ -775,6 +782,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let canv = canvasFactory(r.minInnerWidth + r.bs[0] + r.bs[2], r.minInnerHeight + r.bs[1] + r.bs[3]);
 
         await r.doRender(canv, 0, 0);
+        canv.canv.setFonts(this.registeredFonts);
+
         return canv.canv;
     }
 }

@@ -64,10 +64,13 @@ export class SVGCanvas{
 
     private els: string[];
 
+    private registeredFonts: Map<string, string>;
+
     public constructor(w: number, h: number){
         this.w = w;
         this.h = h;
         this.els = [];
+        this.registeredFonts = new Map<string, string>();
     }
 
     public fillRect(x: number, y: number, w: number, h: number, fillStyle: string): void{
@@ -75,7 +78,7 @@ export class SVGCanvas{
     }
 
     public fillText(text: string, x: number, y: number, font: string, fillStyle: string, baseline: TextBaseline): void{
-        this.els.push(`<text x="${x}" y="${y}" dominant-baseline="${baseline.replace(/top/, "text-top").replace(/bottom/, "text-bottom").replace(/middle/, "central")}" style="font: ${font.replace(/"/g, "&quot;")}; fill: ${fillStyle};">${text}</text>`);
+        this.els.push(`<text x="${x}" y="${y}" dominant-baseline="${baseline.replace(/top/, "text-top").replace(/bottom/, "text-bottom")}" style="font: ${font.replace(/"/g, "&quot;")}; fill: ${fillStyle};">${text}</text>`);
     }
 
     public fill(path: SVGPath, fillStyle: string): void{
@@ -90,8 +93,25 @@ export class SVGCanvas{
         this.els.push(`<g transform="translate(${dx}, ${dy})">${image.genSVG(false)}</g>`);
     }
 
-    public genSVG(withProlog: boolean = true): string{
-        return `${withProlog ? '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' : ""}<svg version="1.1" width="${this.w}" height="${this.h}" xmlns="http://www.w3.org/2000/svg">${this.els.join("")}</svg>`;
+    public genSVG(isRoot: boolean = true): string{
+        return `${isRoot ? '<?xml version="1.0" encoding="UTF-8" standalone="no"?>' : ""}<svg version="1.1" width="${this.w}" height="${this.h}" xmlns="http://www.w3.org/2000/svg">${isRoot ? this.getStyles() : ""}${this.els.join("")}</svg>`;
+    }
+
+    private getStyles(): string{
+        if(this.registeredFonts.size > 0){
+            let fontFaces: string[] = [];
+            this.registeredFonts.forEach((src, name) => {
+                fontFaces.push(`@font-face{font-family: ${name}; src: url("${new URL(src, document.baseURI ?? document.URL).toString()}");}`);
+            });
+
+            return `<style>${fontFaces.join("")}</style>`;
+        }
+
+        return "";
+    }
+
+    public setFonts(fonts: Map<string, string>): void{
+        this.registeredFonts = fonts;
     }
 };
 

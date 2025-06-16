@@ -79,7 +79,7 @@ export class SignRenderer extends _SignRenderer<HTMLCanvasElement, BrowserDrawin
         });
     }
 
-    public override async registerFont(familyName: string, src: string): Promise<void> {
+    protected override async _registerFont(familyName: string, src: string): Promise<void> {
         const font = new FontFace(
             familyName,
             `url('${src.replace(/\'/g, "\\'")}')`,

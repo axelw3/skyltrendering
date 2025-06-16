@@ -75,7 +75,7 @@ export class SignRenderer extends _SignRenderer<Canvas, NodeDrawingArea>{
         return readFile(url, {encoding: "utf8"});
     }
 
-    public override async registerFont(familyName: string, src: string): Promise<void> {
+    protected override async _registerFont(familyName: string, src: string): Promise<void> {
         GlobalFonts.registerFromPath(src, familyName);
     }
 
