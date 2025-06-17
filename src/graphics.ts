@@ -20,21 +20,26 @@ export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, 
             w1 = nominalLineWidth[Math.floor(i / 2) * 2 + 1],
             br = borderRadius[i];
 
-        let arx = Math.max(br - w0, 0),
-            ary = Math.max(br - w1, 0);
-
-        cx -= signX * arx;
-        cy -= signY * ary;
-
         let startAngle = ((i - 2) * Math.PI) / 2 + Math.PI/4;
 
         let v1 = startAngle - Math.PI/4,
             v2 = startAngle + Math.PI/4;
 
         if(outer){
-            p.ellipse(cx + signX * Math.max(0, w0 - br), cy + signY * Math.max(0, w1 - br), br, br, 0, v1, v2, false);
+            if(br > 0){
+                p.ellipse(cx + signX * (w0 - br), cy + signY * (w1 - br), br, br, 0, v1, v2, false);
+            }else{
+                p[i > 0 ? "lineTo" : "moveTo"](cx + signX * w0, cy + signY * w1);
+            }
         }else{
-            p.ellipse(cx, cy, arx, ary, 0, v2, v1, true);
+            if(br > 0){
+                let arx = Math.max(br - w0, 0),
+                    ary = Math.max(br - w1, 0);
+
+                p.ellipse(cx - signX * arx, cy - signY * ary, arx, ary, 0, v2, v1, true);
+            }else{
+                p.lineTo(cx, cy);
+            }
         }
     };
 
