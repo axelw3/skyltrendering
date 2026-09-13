@@ -1,4 +1,4 @@
-import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, BASETYPE, CanvasFactory } from "./typedefs.js"
+import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, SignElementBaseType, BASETYPES, CanvasFactory } from "./typedefs.js"
 import { roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
@@ -326,7 +326,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         opt = this.resolveTemplate(opt);
 
-        const baseType = opt.type.startsWith(".") ? BASETYPE.MALL : opt.type as BASETYPE;
+        const baseType = opt.type.startsWith(".") ? BASETYPES.MALL : opt.type as SignElementBaseType;
         let typeDefaults: SignElementUserProperties | null = this.conf.defaults[baseType] ?? null;
 
         let propBase: SignElementBaseProperties & SignElementRequiredProperties = Object.assign(
@@ -345,7 +345,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             borderWidth: to5EForm(propBase.borderWidth, dimProperties.borderWidth)
         });
 
-        let inh: SignElementBaseProperties & SignElementUserProperties = opt.type === BASETYPE.GROUP
+        let inh: SignElementBaseProperties & SignElementUserProperties = opt.type === BASETYPES.GROUP
             ? Object.assign({}, inhProperties, SignRenderer.getInhProperties(inhProperties, opt.properties))
             : SignRenderer.getInhProperties(prop);
 
@@ -356,7 +356,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let renderPromise: (ctx: NewDrawingArea<C>, x0: number, y0: number, maxInnerWidth: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
-        if(opt.type === BASETYPE.SKYLT || opt.type === BASETYPE.GROUP){
+        if(opt.type === BASETYPES.SKYLT || opt.type === BASETYPES.GROUP){
             if(opt.elements === undefined || opt.elements.length === 0){
                 throw new Error(`Element of type "${opt.type}" has no children.`);
             }
@@ -373,7 +373,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let re = this._render(
                     c, inh,
                     canvasFactory,
-                    opt.type === BASETYPE.GROUP
+                    opt.type === BASETYPES.GROUP
                         ? dimProperties
                         : {
                             borderRadius: to4EForm(opt.properties?.borderRadius ?? null, dimProperties.borderRadius),
@@ -381,7 +381,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         }
                 );
 
-                let isNewline = c.type === BASETYPE.NEWLINE;
+                let isNewline = c.type === BASETYPES.NEWLINE;
                 let c2: RenderingResultOpt<C> = {
                     isn: isNewline,
                     r: re,
@@ -493,7 +493,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 return pro;
             })).then(() => {});
-        }else if(opt.type === BASETYPE.VAGNR || opt.type === BASETYPE.TEXT){
+        }else if(opt.type === BASETYPES.VAGNR || opt.type === BASETYPES.TEXT){
             let vectorFont = this.vectorFonts.get(prop.font.slice(1, -1));
 
             const fontSize = prop.fontSize;
@@ -522,7 +522,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 res();
             });
-        }else if(opt.type === BASETYPE.SYMBOL){
+        }else if(opt.type === BASETYPES.SYMBOL){
             if(prop.type === undefined) throw new Error("Symbol element has no \"type\" property.");
 
             let symbolType = this.conf.symbols[prop.type];
@@ -546,7 +546,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 symbolType.width, // sw
                 Math.min((maxInnerHeight - padding[1] - padding[3]) / (prop.scale ?? 1), maxSymH) // sh
             ).then(ctx2 => ctx.drawImage(ctx2, x0 + padding[0], y0 + padding[1]));
-        }else if(opt.type === BASETYPE.NEWLINE){
+        }else if(opt.type === BASETYPES.NEWLINE){
             contentsWidth = 0;
             contentsHeight = 0;
         }else if(opt.type.startsWith(".")){

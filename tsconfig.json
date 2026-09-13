@@ -3,6 +3,7 @@
         /* Language and Environment */
         "target": "es2017",
         "noLib": false,
+        "types": ["node"],
 
         /* Modules */
         "module": "node16",
@@ -15,7 +16,6 @@
         "removeComments": true,
 
         /* Interop Constraints */
-        "esModuleInterop": false,
         "forceConsistentCasingInFileNames": true,
 
         /* Type Checking */

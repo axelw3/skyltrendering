@@ -109,18 +109,19 @@ export type SignElementNode = {
     data: SignElementOptions;
 };
 
-export const enum BASETYPE{
-    SKYLT = "skylt",
-    TEXT = "text",
-    VAGNR = "vagnr",
-    NEWLINE = "newline",
-    SYMBOL = "symbol",
-    GROUP = "group",
-    MALL = ".mall",
-    MAKRO = "#makro"
-};
+export const BASETYPES = {
+    SKYLT: "skylt",
+    TEXT: "text",
+    VAGNR: "vagnr",
+    NEWLINE: "newline",
+    SYMBOL: "symbol",
+    GROUP: "group",
+    MALL: ".mall",
+    MAKRO: "#makro"
+} as const;
 
-export type SignElementType = `${BASETYPE}` | `.${string}` | `#${string}`;
+export type SignElementBaseType = (typeof BASETYPES)[keyof typeof BASETYPES];
+export type SignElementType = SignElementBaseType | `.${string}` | `#${string}`;
 
 // data som ges av användaren
 export type SignElementOptions = {
@@ -134,7 +135,7 @@ export type SignElementOptions = {
 export type PropertiesDefaults = {
     globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
     rootDefaults: SignElementBaseProperties & SignElementUserProperties;
-    defaults: {[key in BASETYPE]?: SignElementUserProperties};
+    defaults: {[key in SignElementBaseType]?: SignElementUserProperties};
 };
 
 export type ConfigData = PropertiesDefaults & {
