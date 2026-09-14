@@ -184,7 +184,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 y0 += bs.h[1] + Math.floor((innerHeight - s[0]) / 2);
                 break;
             default:
-                throw new Error("Okänd kantplacering: " + side);
+                throw new Error("Unknown border feature positioning: " + side);
         }
 
         let w = lr ? s[1] : s[0],
@@ -277,7 +277,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             let templateName = opt.type.slice(1);
             let templ = this.conf.templates[templateName];
             if(!templ){
-                throw new Error("Unknown macro \"" + templateName + "\".");
+                throw new Error(`Unknown macro "${templateName}".`);
                 break;
             }
 
@@ -551,7 +551,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             contentsHeight = 0;
         }else if(opt.type.startsWith(".")){
             let nodes = opt.nodes ?? {};
-            let t = this.conf.signTypes[opt.type.slice(1)];
+            const tname = opt.type.slice(1);
+            let t = this.conf.signTypes[tname];
+
+            if(t === undefined){
+                throw new Error(`Unknown template "${tname}".`);
+            }
+
             let keys = Object.keys(t.nodes).sort().filter(nodeName => !!nodes[nodeName]);
 
             if(opt.nodes === undefined || keys.length === 0){
@@ -670,7 +676,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 ));
             });
         }else{
-            throw new Error("Okänd typ av element: " + String(opt.type));
+            throw new Error("Unknown element type: " + String(opt.type));
         }
 
         const   iw0 = contentsWidth + padding[0] + padding[2],
