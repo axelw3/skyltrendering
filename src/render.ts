@@ -87,7 +87,7 @@ class BorderDimensions{
     h: Vec4;
     el: (BorderElement | null)[];
 
-    constructor(bw: Vec4 | Vec5, private readonly scale: number){
+    constructor(bw: Vec5, private readonly scale: number){
         this.h = [bw[0], bw[1], bw[2], bw[3]].map(x => x * scale) as Vec4;
         this.el = [null, null, null, null, null];
     }
@@ -490,7 +490,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 }
 
                 if(lineBreakAfter){
-                    y += c2.ls;
+                    y += c2.ls * scale;
                     y += h[c2.row];
                     x = 0;
                 }else if(i + 1 < els.length){
@@ -733,6 +733,9 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let br: Vec4 = [...prop.borderRadius].map(x => x * scale) as Vec4,
                     bw: Vec4 = [prop.borderWidth[0], prop.borderWidth[1], prop.borderWidth[2], prop.borderWidth[3]].map(x => x * scale) as Vec4;
 
+                const   br2: Vec4 = [...br],
+                        bw2: Vec4 = [...bw];
+
                 for(let i = 0; i < 4; i++){
                     if(bfs[i] || bfs[(i + 1) % 4]) br[i] = 0;
                     if(bfs[i]) bw[i] = 0;
@@ -770,8 +773,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 );
 
                 if(prop.dashedInset){
-                    let bw2 = prop.borderWidth;
-
                     roundedFrame(
                         ctx,
                         x0 + bs.h[0] + 2*bw2[0], y0 + bs.h[1] + 2*bw2[1],
@@ -779,8 +780,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         [bw2[0], bw2[1], bw2[2], bw2[3]],
                         prop.color,
                         prop.background,
-                        prop.borderRadius,
-                        [10, 10]
+                        br2,
+                        [10 * scale, 10 * scale]
                     );
                 }
 
