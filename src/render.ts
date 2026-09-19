@@ -87,14 +87,14 @@ class BorderDimensions{
     h: Vec4;
     el: (BorderElement | null)[];
 
-    constructor(bw: Vec4 | Vec5){
-        this.h = [bw[0], bw[1], bw[2], bw[3]];
+    constructor(bw: Vec4 | Vec5, private readonly scale: number){
+        this.h = [bw[0], bw[1], bw[2], bw[3]].map(x => x * scale) as Vec4;
         this.el = [null, null, null, null, null];
     }
 
     set(i: number, el: BorderElement){
         this.el[i] = el;
-        if(i < 4) this.h[i] = Math.floor(el.h);
+        if(i < 4) this.h[i] = Math.floor(el.h * this.scale);
     }
 }
 
@@ -118,12 +118,12 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         this.vectorFonts.set(name, font);
     }
 
-    private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties){
+    private borderSize(innerWidth: number, innerHeight: number, properties: SignElementProperties, bscale: number){
         let bw = properties.borderWidth,
             br = properties.borderRadius,
             bf = properties.borderFeatures;
 
-        let bs = new BorderDimensions(bw);
+        let bs = new BorderDimensions(bw, bscale);
 
         if(bf["left"] !== undefined)
             bs.set(0, new BorderElement(this.conf.borderFeatures[bf["left"]], bw[0], br[3], br[0], br[1], br[2], innerHeight + bw[1] + bw[3], innerWidth + bw[0] + bw[2]));
@@ -170,18 +170,18 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         switch(side){
             case "overlay":
-                x0 += bs.h[0] * scale + Math.floor((innerWidth - s[0]) / 2);
-                y0 += bs.h[1] * scale + Math.floor((innerHeight - s[1]) / 2);
+                x0 += bs.h[0] + Math.floor((innerWidth - s[0]) / 2);
+                y0 += bs.h[1] + Math.floor((innerHeight - s[1]) / 2);
                 break;
             case "bottom":
-                y0 += bs.h[1] * scale + innerHeight;
+                y0 += bs.h[1] + innerHeight;
             case "top":
-                x0 += bs.h[0] * scale + Math.floor((innerWidth - s[0]) / 2);
+                x0 += bs.h[0] + Math.floor((innerWidth - s[0]) / 2);
                 break;
             case "right":
-                x0 += bs.h[0] * scale + innerWidth;
+                x0 += bs.h[0] + innerWidth;
             case "left":
-                y0 += bs.h[1] * scale + Math.floor((innerHeight - s[0]) / 2);
+                y0 += bs.h[1] + Math.floor((innerHeight - s[0]) / 2);
                 break;
             default:
                 throw new Error("Unknown border feature positioning: " + side);
@@ -535,10 +535,15 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             if(symbolType === undefined) throw new Error(`Symbol type "${prop.type}" was not defined.`);
 
-            contentsWidth = symbolType.width * scale;
-            contentsHeight = symbolType.height[0] * scale;
+            let sz = scale;
+            if(prop.size !== undefined){
+                sz *= prop.size;
+            }
+
+            contentsWidth = symbolType.width * sz;
+            contentsHeight = symbolType.height[0] * sz;
             let maxSymH = prop.grow ? (prop.maxHeight ?? symbolType.height[1]) : symbolType.height[0];
-            maxContentsHeight = maxSymH * scale;
+            maxContentsHeight = maxSymH * sz;
 
             let url = `res/symbol/${prop.type}.json`;
             let v: string | undefined = prop.variant ?? symbolType.default;
@@ -550,7 +555,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 maxInnerHeight - padding[1] - padding[3], // dh
                 0, 0,
                 symbolType.width, // sw
-                Math.min((maxInnerHeight - padding[1] - padding[3]) / scale, maxSymH) // sh
+                Math.min((maxInnerHeight - padding[1] - padding[3]) / sz, maxSymH) // sh
             ).then(ctx2 => ctx.drawImage(ctx2, x0 + padding[0], y0 + padding[1]));
         }else if(opt.type === BASETYPES.NEWLINE){
             contentsWidth = 0;
@@ -695,7 +700,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         // OBS! såhär långt borde skalningen vara ok
 
-        let bs = this.borderSize(iw0 / scale, ih0 / scale, prop);
+        let bs = this.borderSize(iw0 / scale, ih0 / scale, prop, scale);
 
         if(firstLastCenter.some(isNaN)){
             firstLastCenter = [
@@ -710,7 +715,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             flc: firstLastCenter,
             minInnerWidth: iw0,
             minInnerHeight: ih0,
-            bs: bs.h.map(x => x * scale) as typeof bs["h"],
+            bs: bs.h,
             properties: prop,
             doRender: async (ctx: NewDrawingArea<C>, x0: number, y0: number, verticalAlign: AlignModeY | undefined = prop.alignContentsV, innerWidth = iw0, maxInnerHeight: number = ih0, rowInnerElHeight: number = ih0) => {
                 let innerHeight = prop.grow ? Math.min(rowInnerElHeight, padding[1] + padding[3] + maxContentsHeight) : ih0;
@@ -735,7 +740,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 roundedFill(
                     ctx,
-                    x0 + bs.h[0] * scale, y0 + bs.h[1] * scale,
+                    x0 + bs.h[0], y0 + bs.h[1],
                     innerWidth, innerHeight,
                     bw,
                     br,
@@ -745,7 +750,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentsWidth, innerWidth - padding[0] - padding[2]);
 
                 let dy = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, innerHeight - padding[1] - padding[3]);
-                await renderPromise(ctx, x0 + bs.h[0] * scale + dx, y0 + bs.h[1] * scale + dy, contentsWidth + padding[0] + padding[2], contentsHeight + padding[1] + padding[3]);
+                await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, contentsWidth + padding[0] + padding[2], contentsHeight + padding[1] + padding[3]);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];
@@ -756,7 +761,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 roundedFrame(
                     ctx,
-                    x0 + bs.h[0] * scale, y0 + bs.h[1] * scale,
+                    x0 + bs.h[0], y0 + bs.h[1],
                     innerWidth, innerHeight,
                     bw,
                     prop.color,
@@ -769,7 +774,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                     roundedFrame(
                         ctx,
-                        x0 + bs.h[0] * scale + 2*bw2[0], y0 + bs.h[1] * scale + 2*bw2[1],
+                        x0 + bs.h[0] + 2*bw2[0], y0 + bs.h[1] + 2*bw2[1],
                         innerWidth - 2*bw2[0] - 2*bw2[2], innerHeight - 2*bw2[1] - 2*bw2[3],
                         [bw2[0], bw2[1], bw2[2], bw2[3]],
                         prop.color,
