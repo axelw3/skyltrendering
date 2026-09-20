@@ -84,3 +84,7 @@ export function parseVarStr(str: string, vars = {}): string{
 
     return result.join("") + str.substring(i);
 }
+
+export function scaleVec<T extends number[]>(x: T, scale: number): T{
+    return x.map(y => y * scale) as T;
+}

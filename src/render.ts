@@ -1,10 +1,10 @@
-import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, SignElementBaseType, BASETYPES, CanvasFactory } from "./typedefs.js"
+import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, SignElementBaseType, BASETYPES, CanvasFactory, NumNullOptArr, Vec2 } from "./typedefs.js"
 import { fillCorners, roundedFill, roundedFrame } from "./graphics.js";
-import { mathEval, parseVarStr } from "./utils.js";
+import { mathEval, parseVarStr, scaleVec } from "./utils.js";
 import { VectorFont } from "./font.js";
 import { SVGCanvas, SVGDrawingArea } from "./svg.js";
 
-const propertiesDefaults: PropertiesDefaults = {
+const propertiesDefaults: ConfigData = {
     "globalDefaults": { "borderFeatures": {}, "borderWidth": 0, "padding": 0, "xSpacing": 8 },
     "rootDefaults": { "background": "#06a", "color": "white", "cover": true, "borderRadius": 8, "borderWidth": 3, "font": "sans-serif", "fontSize": 32, "lineHeight": 46, "lineSpacing": 4, "fillCorners": true },
     "defaults": {
@@ -15,7 +15,13 @@ const propertiesDefaults: PropertiesDefaults = {
         "text": {},
         "newline": {},
         "symbol": { "alignContents": "center", "alignContentsV": "middle", "grow": true, "padding": 3, "type": "default" }
-    }
+    },
+
+    "defaultLineDash": [10, 10],
+    "signTypes": {},
+    "symbols": {},
+    "borderFeatures": {},
+    "templates": {}
 };
 
 // Bestämning av värde på elementegenskaper görs enligt följande prioriteringsordning:
@@ -24,7 +30,7 @@ const propertiesDefaults: PropertiesDefaults = {
 // 3. Typspecifikt standardvärde (från defaults)
 // 4. Globalt standardvärde (från globalDefaults)
 
-function to4EForm(data: (number | null)[] | number | null, fb: Vec4 | Vec5 = [0, 0, 0, 0]): Vec4{
+function to4EForm(data: NumNullOptArr, fb: Vec4 | Vec5 = [0, 0, 0, 0]): Vec4{
     if(!Array.isArray(data ??= fb)) return [data, data, data, data];
 
     let a = data[0] ?? (data.length > 0 ? fb[0] : 0);
@@ -35,7 +41,7 @@ function to4EForm(data: (number | null)[] | number | null, fb: Vec4 | Vec5 = [0,
     return [a, b, c, d];
 }
 
-function to5EForm(data: (number | null)[] | number | null, fb: Vec5 = [0, 0, 0, 0, 0]): Vec5{
+function to5EForm(data: NumNullOptArr, fb: Vec5 = [0, 0, 0, 0, 0]): Vec5{
     if(!Array.isArray(data ??= fb)) return [data, data, data, data, data];
     let v4 = to4EForm(data, fb);
     return [
@@ -88,7 +94,7 @@ class BorderDimensions{
     el: (BorderElement | null)[];
 
     constructor(bw: Vec5, private readonly scale: number){
-        this.h = [bw[0], bw[1], bw[2], bw[3]].map(x => x * scale) as Vec4;
+        this.h = scaleVec([bw[0], bw[1], bw[2], bw[3]], scale);
         this.el = [null, null, null, null, null];
     }
 
@@ -99,7 +105,7 @@ class BorderDimensions{
 }
 
 export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
-    private registeredFonts: Map<string, string>;
+    private readonly registeredFonts: Map<string, string>;
 
     protected abstract createCanvas(w?: number, h?: number): T;
     protected abstract getText(url: string): Promise<string>;
@@ -269,8 +275,8 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         });
     }
 
-    private conf: ConfigData;
-    private vectorFonts: Map<string, VectorFont>;
+    private readonly conf: Readonly<ConfigData>;
+    private readonly vectorFonts: Map<string, VectorFont>;
 
     protected resolveTemplate(opt: SignElementOptions): SignElementOptions{
         while(opt.type.startsWith("#")){
@@ -291,15 +297,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     }
 
     public constructor(config: UserConfigData){
-        this.conf = {
-            globalDefaults: config.globalDefaults ?? propertiesDefaults.globalDefaults,
-            rootDefaults: config.rootDefaults ?? propertiesDefaults.rootDefaults,
-            defaults: config.defaults ?? propertiesDefaults.defaults,
-            signTypes: config.signTypes ?? {},
-            symbols: config.symbols ?? {},
-            borderFeatures: config.borderFeatures ?? {},
-            templates: config.templates ?? {}
-        };
+        this.conf = {...propertiesDefaults, ...config};
 
         this.vectorFonts = new Map<string, VectorFont>();
         this.registeredFonts = new Map<string, string>();
@@ -355,7 +353,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             ? Object.assign({}, inhProperties, SignRenderer.getInhProperties(inhProperties, opt.properties))
             : SignRenderer.getInhProperties(prop);
 
-        let padding = Array.from(prop.padding).map(x => x * scale);
+        let padding = scaleVec(prop.padding, scale);
 
         let contentsWidth = 0, contentsHeight = 0, maxContentsHeight = -1;
 
@@ -730,11 +728,12 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     return bf !== undefined && this.conf.borderFeatures[bf].w === undefined; // cover => hel, täcker hela kantens längd
                 });
 
-                let br: Vec4 = [...prop.borderRadius].map(x => x * scale) as Vec4,
-                    bw: Vec4 = [prop.borderWidth[0], prop.borderWidth[1], prop.borderWidth[2], prop.borderWidth[3]].map(x => x * scale) as Vec4;
+                let br: Vec4 = scaleVec(prop.borderRadius, scale),
+                    bw: Vec4 = scaleVec([prop.borderWidth[0], prop.borderWidth[1], prop.borderWidth[2], prop.borderWidth[3]], scale);
 
-                const   br2: Vec4 = [...br],
-                        bw2: Vec4 = [...bw];
+                const ld: Vec2 | undefined = !!prop.borderDash
+                    ? scaleVec<Vec2>(prop.borderDash === true ? this.conf.defaultLineDash : prop.borderDash, scale)
+                    : undefined;
 
                 for(let i = 0; i < 4; i++){
                     if(bfs[i] || bfs[(i + 1) % 4]) br[i] = 0;
@@ -773,18 +772,24 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     prop.color,
-                    br
+                    br,
+                    ld
                 );
 
-                if(prop.dashedInset){
+                if(!!prop.dashedInset){
+                    const   br2 = scaleVec(to4EForm(prop.dashedInsetR ?? null, prop.borderRadius), scale),
+                            bw2 = scaleVec(to4EForm(prop.dashedInsetW ?? null, prop.borderWidth), scale);
+
+                    const ld2 = scaleVec<Vec2>(this.conf.defaultLineDash, scale);
+
                     roundedFrame(
                         ctx,
                         x0 + bs.h[0] + 2*bw2[0], y0 + bs.h[1] + 2*bw2[1],
                         innerWidth - 2*bw2[0] - 2*bw2[2], innerHeight - 2*bw2[1] - 2*bw2[3],
-                        [bw2[0], bw2[1], bw2[2], bw2[3]],
+                        bw2,
                         prop.color,
                         br2,
-                        [10 * scale, 10 * scale]
+                        ld2
                     );
                 }
 

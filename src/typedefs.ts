@@ -46,10 +46,12 @@ type SignSymbolDefinition = {
     default?: string;
 };
 
+export type NumNullOptArr = (number | null)[] | number | null;
+
 // properties som ärvs (måste därför specificeras av rootDefaults)
 export type SignElementBaseProperties = {
     background: string;
-    borderRadius: (number | null)[] | number | null;
+    borderRadius: NumNullOptArr;
     color: string;
     font: string;
     fontSize: number;
@@ -61,8 +63,8 @@ export type SignElementBaseProperties = {
 // dessa måste alltså specificeras av globalDefaults
 export type SignElementRequiredProperties = {
     borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
-    borderWidth: (number | null)[] | number | null;
-    padding: (number | null)[] | number | null;
+    borderWidth: NumNullOptArr;
+    padding: NumNullOptArr;
     xSpacing: number;
 };
 
@@ -71,9 +73,12 @@ type SignElementOptionalProperties = {
     alignContents: AlignModeX;
     alignContentsV: AlignModeY;
     blockDisplay: boolean;
+    borderDash: boolean | Vec2;
     columns: number[];
     cover: boolean;
     dashedInset: boolean;
+    dashedInsetR: NumNullOptArr;
+    dashedInsetW: NumNullOptArr;
     fillCorners: boolean;
     grow: boolean;
     maxHeight: number; // symbol
@@ -133,13 +138,14 @@ export type SignElementOptions = {
     params?: any[];
 }
 
-export type PropertiesDefaults = {
+export type ConfigData = {
     globalDefaults: SignElementUserProperties & SignElementRequiredProperties;
     rootDefaults: SignElementBaseProperties & SignElementUserProperties;
     defaults: {[key in SignElementBaseType]?: SignElementUserProperties};
-};
 
-export type ConfigData = PropertiesDefaults & {
+    // standard-streckarray
+    defaultLineDash: Vec2;
+
     // Skylttyper ("symboler med noder")
     signTypes: {
         [key: string]: SignTypeDefinition;
