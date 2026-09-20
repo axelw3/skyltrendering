@@ -1,5 +1,5 @@
 import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, PropertiesDefaults, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, SignElementBaseType, BASETYPES, CanvasFactory } from "./typedefs.js"
-import { roundedFill, roundedFrame } from "./graphics.js";
+import { fillCorners, roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr } from "./utils.js";
 import { VectorFont } from "./font.js";
 import { SVGCanvas, SVGDrawingArea } from "./svg.js";
@@ -753,6 +753,11 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let dx = SignRenderer.calculateAlignmentOffset(prop.alignContents, contentsWidth, innerWidth - padding[0] - padding[2]);
 
                 let dy = SignRenderer.calculateAlignmentOffset(prop.alignContentsV, contentsHeight, innerHeight - padding[1] - padding[3]);
+
+                if(prop.fillCorners){
+                    fillCorners(ctx, x0 + bs.h[0], y0 + bs.h[1], innerWidth, innerHeight, bw, br, prop.background);
+                }
+
                 await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, contentsWidth + padding[0] + padding[2], contentsHeight + padding[1] + padding[3]);
 
                 let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
@@ -768,7 +773,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     innerWidth, innerHeight,
                     bw,
                     prop.color,
-                    prop.fillCorners ? prop.background : null,
                     br
                 );
 
@@ -779,7 +783,6 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         innerWidth - 2*bw2[0] - 2*bw2[2], innerHeight - 2*bw2[1] - 2*bw2[3],
                         [bw2[0], bw2[1], bw2[2], bw2[3]],
                         prop.color,
-                        prop.background,
                         br2,
                         [10 * scale, 10 * scale]
                     );

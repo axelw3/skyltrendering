@@ -1,17 +1,17 @@
 import type { Vec4, Vec2, NewDrawingArea } from "./typedefs.js";
 
-export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], color: string = "#000", background: string | null, borderRadius: Vec4 = [0, 0, 0, 0], lineDash: Vec2 = [1, 0]){
+export function fillCorners<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], borderRadius: Vec4 = [0, 0, 0, 0], fillColor: string){
+    ctx.fillStyle = fillColor;
+    if(borderRadius[0] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 - nominalLineWidth[1], borderRadius[0], borderRadius[0]);
+    if(borderRadius[1] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[1], y0 - nominalLineWidth[1], borderRadius[1], borderRadius[1]);
+    if(borderRadius[2] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[2], y0 + innerHeight + nominalLineWidth[3] - borderRadius[2], borderRadius[2], borderRadius[2]);
+    if(borderRadius[3] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 + innerHeight + nominalLineWidth[3] - borderRadius[3], borderRadius[3], borderRadius[3]);
+}
+
+export function roundedFrame<T>(ctx: NewDrawingArea<T>, x0: number, y0: number, innerWidth: number, innerHeight: number, nominalLineWidth: Vec4 = [4, 4, 4, 4], color: string = "#000", borderRadius: Vec4 = [0, 0, 0, 0], lineDash: Vec2 = [1, 0]){
     // lineDash = [längd, mellanrum]
 
     if(Math.max(...nominalLineWidth) <= 0) return;
-
-    if(background !== null){
-        ctx.fillStyle = background;
-        if(borderRadius[0] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 - nominalLineWidth[1], borderRadius[0], borderRadius[0]);
-        if(borderRadius[1] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[1], y0 - nominalLineWidth[1], borderRadius[1], borderRadius[1]);
-        if(borderRadius[2] > 0) ctx.fillRect(x0 + innerWidth + nominalLineWidth[2] - borderRadius[2], y0 + innerHeight + nominalLineWidth[3] - borderRadius[2], borderRadius[2], borderRadius[2]);
-        if(borderRadius[3] > 0) ctx.fillRect(x0 - nominalLineWidth[0], y0 + innerHeight + nominalLineWidth[3] - borderRadius[3], borderRadius[3], borderRadius[3]);
-    }
 
     let p = ctx.createPath2D();
 
