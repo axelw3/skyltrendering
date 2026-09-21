@@ -1,4 +1,4 @@
-import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, SignElementBaseType, BASETYPES, CanvasFactory, NumNullOptArr, Vec2 } from "./typedefs.js"
+import { MathEnv, Vec4, SignElementProperties, SignElementOptions, SignElementBaseProperties, RenderingResult, Vec6, NewDrawingArea, JSONVec, JSONVecReference, ConfigData, BorderFeatureDefinition, UserConfigData, Vec5, AlignModeX, AlignModeY, SignElementRequiredProperties, SignElementUserProperties, SignElementDimProperties, RenderingResultOpt, CanvasFactory, NumNullOptArr, Vec2, BorderFeaturePlacement, BORDER_PLACEMENTS, getBaseType } from "./typedefs.js"
 import { fillCorners, roundedFill, roundedFrame } from "./graphics.js";
 import { mathEval, parseVarStr, scaleVec } from "./utils.js";
 import { VectorFont } from "./font.js";
@@ -159,17 +159,18 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 return outerSide - innerSide;
             default:
                 // "left" or unknown value (left-aligned is the default)
+                alignMode satisfies "top" | "left" | undefined;
                 return 0;
         }
     }
 
-    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, feature: BorderFeatureDefinition, side: string, bs: BorderDimensions, innerWidth: number, innerHeight: number, prop: SignElementProperties, scale: number){
+    private renderBorderFeature(ctx: NewDrawingArea<any>, x0: number, y0: number, feature: BorderFeatureDefinition, side: BorderFeaturePlacement, bs: BorderDimensions, innerWidth: number, innerHeight: number, prop: SignElementProperties, scale: number){
         // (x0, y0) - Övre vänstra hörnet. Denna punkt är densamma som yttersta punkten på hörnet då borderRadius == 0.
 
         let clr = [prop.color, prop.background];
 
         let lr = (side === "left" || side === "right");
-        let bri = ["left", "top", "right", "bottom", "overlay"].indexOf(side);
+        let bri = BORDER_PLACEMENTS.indexOf(side);
 
         let bw = prop.borderWidth[bri] * scale;
         let s = [(bs.el[bri]?.w ?? 0) * scale, (bs.el[bri]?.h ?? 0) * scale];
@@ -190,6 +191,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 y0 += bs.h[1] + Math.floor((innerHeight - s[0]) / 2);
                 break;
             default:
+                side satisfies never;
                 throw new Error("Unknown border feature positioning: " + side);
         }
 
@@ -212,6 +214,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         //ctx.fillRect(x0, y0, w, h);
 
         if(side !== "overlay" && !feature.clip){
+            side satisfies "left" | "top" | "right" | "bottom";
             ctx.fillStyle = clr[1];
             ctx.fillRect(x0 + (side === "left" ? (s[1] - bw) : 0) + (lr ? 0 : (bw/2)), y0 + (side === "top" ? (s[1] - bw) : 0) + (lr ? (bw/2) : 0), lr ? bw : (s[0] - bw), lr ? (s[0] - bw) : bw);
         }
@@ -279,12 +282,11 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
     private readonly vectorFonts: Map<string, VectorFont>;
 
     protected resolveTemplate(opt: SignElementOptions): SignElementOptions{
-        while(opt.type.startsWith("#")){
+        while(getBaseType(opt.type) === "#makro"){
             let templateName = opt.type.slice(1);
             let templ = this.conf.templates[templateName];
             if(!templ){
                 throw new Error(`Unknown macro "${templateName}".`);
-                break;
             }
 
             let template = templ(...(opt.params ?? []));
@@ -324,7 +326,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
         opt = this.resolveTemplate(opt);
 
-        const baseType = opt.type.startsWith(".") ? BASETYPES.MALL : opt.type as SignElementBaseType;
+        const baseType = getBaseType(opt.type);
         let typeDefaults: SignElementUserProperties | null = this.conf.defaults[baseType] ?? null;
 
         let propBase: SignElementBaseProperties & SignElementRequiredProperties = Object.assign(
@@ -349,7 +351,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
             scale *= sf;
         }
 
-        let inh: SignElementBaseProperties & SignElementUserProperties = opt.type === BASETYPES.GROUP
+        let inh: SignElementBaseProperties & SignElementUserProperties = baseType === "group"
             ? Object.assign({}, inhProperties, SignRenderer.getInhProperties(inhProperties, opt.properties))
             : SignRenderer.getInhProperties(prop);
 
@@ -360,9 +362,9 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
         let renderPromise: (ctx: NewDrawingArea<C>, x0: number, y0: number, maxInnerWidth: number, maxInnerHeight: number) => Promise<void>
             = () => Promise.resolve();
 
-        if(opt.type === BASETYPES.SKYLT || opt.type === BASETYPES.GROUP){
+        if(baseType === "skylt" || baseType === "group"){
             if(opt.elements === undefined || opt.elements.length === 0){
-                throw new Error(`Element of type "${opt.type}" has no children.`);
+                throw new Error(`Element of type "${baseType}" has no children.`);
             }
 
             let w = [0], h = [0], j = 0;
@@ -377,7 +379,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 let re = this._render(
                     c, scale, inh,
                     canvasFactory,
-                    opt.type === BASETYPES.GROUP
+                    baseType === "group"
                         ? dimProperties
                         : {
                             borderRadius: to4EForm(opt.properties?.borderRadius ?? null, dimProperties.borderRadius),
@@ -385,7 +387,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         }
                 );
 
-                let isNewline = c.type === BASETYPES.NEWLINE;
+                let isNewline = c.type === "newline";
                 let c2: RenderingResultOpt<C> = {
                     isn: isNewline,
                     r: re,
@@ -497,7 +499,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 return pro;
             })).then(() => {});
-        }else if(opt.type === BASETYPES.VAGNR || opt.type === BASETYPES.TEXT){
+        }else if(baseType === "vagnr" || baseType === "text"){
             let vectorFont = this.vectorFonts.get(prop.font.slice(1, -1));
 
             const fontSize = prop.fontSize * scale;
@@ -526,7 +528,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 res();
             });
-        }else if(opt.type === BASETYPES.SYMBOL){
+        }else if(baseType === "symbol"){
             if(prop.type === undefined) throw new Error("Symbol element has no \"type\" property.");
 
             let symbolType = this.conf.symbols[prop.type];
@@ -555,10 +557,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                 symbolType.width, // sw
                 Math.min((maxInnerHeight - padding[1] - padding[3]) / sz, maxSymH) // sh
             ).then(ctx2 => ctx.drawImage(ctx2, x0 + padding[0], y0 + padding[1]));
-        }else if(opt.type === BASETYPES.NEWLINE){
+        }else if(baseType === "newline"){
             contentsWidth = 0;
             contentsHeight = 0;
-        }else if(opt.type.startsWith(".")){
+        }else if(baseType === ".mall"){
             let nodes = opt.nodes ?? {};
             const tname = opt.type.slice(1);
             let t = this.conf.signTypes[tname];
@@ -624,6 +626,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         leftX = Math.floor((lx[0] + lx[1]) / 2) - result.flc[2] - bs[0];
                         break;
                     default:
+                        ax satisfies "left" | undefined;
                         leftX = lx[0];
                 }
 
@@ -641,6 +644,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                         topY = Math.floor((ty[0] + ty[1]) / 2) - result.flc[3] - bs[1];
                         break;
                     default:
+                        ay satisfies "top" | undefined;
                         topY = ty[0];
                 }
 
@@ -689,7 +693,10 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
                     y0 + padding[1] - boundingBox[2] + crop[1] * scale, // dy
                 ));
             });
+        }else if(baseType === "#makro"){
+            throw new Error("Unexpected error: Found unresolved #makro element!");
         }else{
+            baseType satisfies never;
             throw new Error("Unknown element type: " + String(opt.type));
         }
 
@@ -759,7 +766,7 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
                 await renderPromise(ctx, x0 + bs.h[0] + dx, y0 + bs.h[1] + dy, contentsWidth + padding[0] + padding[2], contentsHeight + padding[1] + padding[3]);
 
-                let bfts: [string, string][] = Object.entries(prop.borderFeatures).filter(feature => {
+                let bfts = (Object.entries(prop.borderFeatures) as readonly [BorderFeaturePlacement, string][]).filter(feature => {
                     let bf = this.conf.borderFeatures[feature[1]];
                     if(!bf.clip) return true;
                     this.renderBorderFeature(ctx, x0, y0, bf, feature[0], bs, innerWidth, innerHeight, prop, scale);

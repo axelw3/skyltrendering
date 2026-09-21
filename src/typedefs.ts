@@ -5,11 +5,17 @@ export type Vec4 = [number, number, number, number];
 export type Vec5 = [number, number, number, number, number];
 export type Vec6 = [number, number, number, number, number, number];
 
-export type AlignModeX = "left" | "center" | "right";
-export type AlignModeY = "top" | "middle" | "bottom";
+export const ALIGNMODES_X = ["left", "center", "right"] as const;
+export const ALIGNMODES_Y = ["top", "middle", "bottom"] as const;
 
-type NodeAnchorX = AlignModeX | "center-first" | "center-last";
-type NodeAnchorY = AlignModeY | "middle-first" | "middle-last";
+export type AlignModeX = NonNullable<typeof ALIGNMODES_X[number]>;
+export type AlignModeY = NonNullable<typeof ALIGNMODES_Y[number]>;
+
+export const ANCHORS_X = [...ALIGNMODES_X, "center-first", "center-last"] as const;
+export const ANCHORS_Y = [...ALIGNMODES_Y, "middle-first", "middle-last"] as const;
+
+type NodeAnchorX = NonNullable<typeof ANCHORS_X[number]>;
+type NodeAnchorY = NonNullable<typeof ANCHORS_Y[number]>;
 
 export type TextBaseline = "top" | "middle" | "bottom" | "alphabetic" | "hanging" | "ideographic";
 
@@ -59,10 +65,13 @@ export type SignElementBaseProperties = {
     lineSpacing: number;
 };
 
+export const BORDER_PLACEMENTS = ["left", "top", "right", "bottom", "overlay"] as const;
+export type BorderFeaturePlacement = NonNullable<typeof BORDER_PLACEMENTS[number]>;
+
 // properties (utöver de i SignElementBaseProperties) som alltid måste finnas
 // dessa måste alltså specificeras av globalDefaults
 export type SignElementRequiredProperties = {
-    borderFeatures: {left?: string, top?: string, right?: string, bottom?: string, overlay?: string};
+    borderFeatures: {[key in BorderFeaturePlacement]?: string};
     borderWidth: NumNullOptArr;
     padding: NumNullOptArr;
     xSpacing: number;
@@ -128,6 +137,24 @@ export const BASETYPES = {
 
 export type SignElementBaseType = (typeof BASETYPES)[keyof typeof BASETYPES];
 export type SignElementType = SignElementBaseType | `.${string}` | `#${string}`;
+
+export const BASETYPES_ARR: readonly string[] = Object.values(BASETYPES).sort() satisfies SignElementBaseType[];
+
+export function getBaseType(t: SignElementType): SignElementBaseType{
+    if(BASETYPES_ARR.includes(t)){
+        return t as SignElementBaseType;
+    }
+
+    if(t.charCodeAt(0) === 0x2E){
+        // `.${string}`
+        return BASETYPES.MALL;
+    }else if(t.charCodeAt(0) === 0x23){
+        // `#${string}`
+        return BASETYPES.MAKRO;
+    }else{
+        throw new Error(`Unknown element type "${t}"`);
+    }
+}
 
 // data som ges av användaren
 export type SignElementOptions = {
