@@ -446,7 +446,13 @@ export abstract class SignRenderer<C, T extends NewDrawingArea<C>>{
 
             contentsWidth = Math.max(...w);
 
-            let rx = new Array(j + 1).fill(0).map((_, r) => SignRenderer.calculateAlignmentOffset(prop.alignContents, w[r], contentsWidth));
+            let rx = new Array(j + 1).fill(0);
+
+            if(!prop.blockDisplay){
+                rx.forEach((_, r) => {
+                    rx[r] = SignRenderer.calculateAlignmentOffset(prop.alignContents, w[r], contentsWidth);
+                });
+            }
 
             // mitt-x (element), se även if-sats nedan
             // mitt-y (rad), se även if-sats nedan
